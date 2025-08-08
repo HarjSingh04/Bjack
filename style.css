@@ -1,1 +1,182 @@
+/* ====== RESET / BASICS ====== */
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  color: #fff;
+  background: #0b132b; /* midnight default */
+}
+
+/* ====== LAYOUT ====== */
+header {
+  max-width: 1000px;
+  margin: 12px auto 0;
+  padding: 0 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+main {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 12px;
+}
+
+#dealerArea, #seatsArea, #seatToggle, #chipsArea, #actionButtons {
+  margin: 10px 0;
+}
+
+/* ====== PROFILE BUTTON ====== */
+.profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #3a506b;
+  padding: 6px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+}
+
+.profile-btn .avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #5bc0be;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.profile-info {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+}
+
+/* ====== DEALER & SEATS ====== */
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #5bc0be;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.cards {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.total {
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+/* ====== SEAT TOGGLE ====== */
+#seatToggle button {
+  background: #3a506b;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#seatToggle button.active {
+  background: #5bc0be;
+}
+
+/* ====== CHIPS ====== */
+.chip {
+  background: #ffcc00;
+  color: black;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  margin: 5px;
+}
+
+/* ====== ACTION BUTTONS ====== */
+#actionButtons button {
+  background: #5bc0be;
+  border: none;
+  color: black;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin: 4px;
+}
+
+/* ====== PROFILE PANEL ====== */
+.panel {
+  position: fixed;
+  right: -300px;
+  top: 0;
+  width: 300px;
+  height: 100%;
+  background: #1c2541;
+  box-shadow: -2px 0 5px rgba(0,0,0,0.4);
+  padding: 20px;
+  transition: right 0.3s ease;
+  z-index: 1000;
+}
+
+.panel.open {
+  right: 0;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-header .avatar.large {
+  width: 50px;
+  height: 50px;
+}
+
+.close-btn {
+  margin-left: auto;
+  background: #ff6b6b;
+  border: none;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.settings-group {
+  margin-top: 12px;
+}
+
+.settings-group label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.settings-group select, .settings-group input[type="text"], .settings-group input[type="number"] {
+  width: 100%;
+  padding: 6px;
+  border-radius: 4px;
+  border: none;
+}
+
+.settings-group button {
+  background: #5bc0be;
+  border: none;
+  color: black;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
 
