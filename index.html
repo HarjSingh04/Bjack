@@ -2,27 +2,28 @@
 <style>
 :root{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
 body{margin:0;background:#0b132b;color:#fff;display:flex;min-height:100vh}
-.app{margin:auto;width:min(950px,100%);padding:16px;box-sizing:border-box}
-.table{background:#1c2541;border-radius:16px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
-.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:center}
+.app{margin:auto;width:min(980px,100%);padding:16px;box-sizing:border-box}
+.table{position:relative;background:#1c2541;border-radius:16px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.4);overflow:hidden}
+.table::before{content:"";position:absolute;inset:-20% -10% auto -10%;height:70%;border-radius:50%/60%;background:radial-gradient(ellipse at 50% 120%,#14532d,#0b3d23 60%,transparent 65%);opacity:.6;z-index:0}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:center;position:relative;z-index:1}
 .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 h1{font-size:clamp(20px,5vw,28px);margin:0 0 8px;letter-spacing:.5px}
 .bank{background:#3a506b;padding:8px 12px;border-radius:999px;font-weight:600;display:flex;gap:10px;align-items:center}
 .status{text-align:center;min-height:24px;margin:8px 0 4px;font-weight:600}
-.hands{display:grid;gap:12px}
-@media(min-width:720px){.hands{grid-template-columns:repeat(3,1fr)}}
-.handWrap{background:#162238;padding:10px;border-radius:12px;outline:2px solid transparent;transition:outline .15s}
+.hands{display:flex;justify-content:space-around;align-items:flex-start;gap:16px;flex-wrap:nowrap;position:relative;z-index:1}
+.handWrap{background:#162238;padding:10px;border-radius:12px;outline:2px solid transparent;transition:outline .15s,transform .15s;transform:translateY(10px)}
 .handWrap.active{outline-color:#5bc0be}
+@media(min-width:720px){.handWrap:nth-child(1){transform:translateY(20px) rotate(-2deg)}.handWrap:nth-child(2){transform:translateY(0)}.handWrap:nth-child(3){transform:translateY(20px) rotate(2deg)}}
 .handHeader{display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px;opacity:.95}
 .hand{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;min-height:110px}
-.label{opacity:.9;font-size:14px;text-align:center;margin-bottom:6px}
+.label{opacity:.9;font-size:14px;text-align:center;margin-bottom:6px;position:relative;z-index:1}
 button{padding:12px 16px;border-radius:10px;border:none;background:#5bc0be;color:#031926;font-weight:700;letter-spacing:.3px}
 button:disabled{opacity:.5}
 .btn-outline{background:transparent;color:#fff;outline:2px solid #fff3}
 .controls{gap:10px;justify-content:center;margin-top:8px;flex-wrap:wrap}
 .bet{background:#0f4c5c;border-radius:12px;padding:10px;display:flex;align-items:center;gap:8px}
 input[type=number]{width:90px;padding:8px;border-radius:8px;border:none}
-.settings{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:8px;margin:10px 0 0}
+.settings{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:8px;margin:10px 0 0;position:relative;z-index:1}
 select{padding:8px;border-radius:8px;border:none}
 .card{width:64px;height:94px;border-radius:8px;background:linear-gradient(145deg,#fff,#f1f1f1);color:#111;display:grid;place-items:center;font-weight:800;position:relative;box-shadow:0 2px 8px rgba(0,0,0,.35);transform:translateY(20px);opacity:0;animation:pop .25s forwards}
 @keyframes pop{to{transform:translateY(0);opacity:1}}
@@ -31,7 +32,7 @@ select{padding:8px;border-radius:8px;border:none}
 .card .suit{position:absolute;bottom:6px;right:8px;font-size:12px}
 .card.red{color:#c1121f}
 .card.back{background:repeating-linear-gradient(45deg,#19376d,#19376d 8px,#0b2447 8px,#0b2447 16px);color:#fff}
-.footer{text-align:center;opacity:.8;font-size:12px;margin-top:10px}
+.footer{text-align:center;opacity:.8;font-size:12px;margin-top:10px;position:relative;z-index:1}
 .pill{background:#3a506b;padding:2px 8px;border-radius:999px;font-weight:700;font-size:12px}
 .muter{background:#0f4c5c;padding:6px 10px;border-radius:999px;font-size:12px;color:#fff}
 </style>
@@ -43,6 +44,12 @@ select{padding:8px;border-radius:8px;border:none}
     <button id="dealBtn">Deal</button><button id="resetBankBtn" class="btn-outline">Reset Bank</button>
   </div></div>
   <div class="settings">
+    <label>Rule set
+      <select id="ruleSet">
+        <option value="euro" selected>European (No Hole Card)</option>
+        <option value="vegas">Vegas (Hole Card + Insurance)</option>
+      </select>
+    </label>
     <label>Decks <select id="numDecks"><option>1</option><option>4</option><option selected>6</option><option>8</option></select></label>
     <label>Dealer hits soft 17? <select id="hitSoft17"><option value="true">Yes</option><option value="false" selected>No</option></select></label>
     <label>Hands this round <select id="numHands"><option selected>1</option><option>2</option><option>3</option></select></label>
@@ -56,21 +63,21 @@ select{padding:8px;border-radius:8px;border:none}
     <button id="doubleBtn" disabled>Double</button><button id="splitBtn" disabled>Split</button>
     <button id="insureBtn" disabled>Insurance</button><button id="newRoundBtn" class="btn-outline" disabled>New Round</button>
   </div>
-  <div class="footer">Multi-hand, Split (once per hand), Insurance (on dealer Ace). Blackjack pays 3:2.</div>
+  <div class="footer">Rule Set toggle above. Multi-hand, Split (once per hand), Insurance only in Vegas mode. Blackjack pays 3:2.</div>
 </div></div>
 
 <script>
 (()=>{const $=s=>document.querySelector(s);
 const bankEl=$('#bank'),betEl=$('#betAmount'),dealerEl=$('#dealerHand'),playerHandsEl=$('#playerHands'),statusEl=$('#status');
 const dealBtn=$('#dealBtn'),hitBtn=$('#hitBtn'),standBtn=$('#standBtn'),doubleBtn=$('#doubleBtn'),splitBtn=$('#splitBtn'),insureBtn=$('#insureBtn'),newRoundBtn=$('#newRoundBtn'),resetBankBtn=$('#resetBankBtn'),muteBtn=$('#muteBtn');
-const numDecksEl=$('#numDecks'),hitSoft17El=$('#hitSoft17'),numHandsEl=$('#numHands'),allowSplitEl=$('#allowSplit');
+const ruleSetEl=$('#ruleSet'),numDecksEl=$('#numDecks'),hitSoft17El=$('#hitSoft17'),numHandsEl=$('#numHands'),allowSplitEl=$('#allowSplit');
 
 let muted=false;const ctx=new (window.AudioContext||window.webkitAudioContext)();
 function beep(f=600,d=.05,t='sine',v=.03){if(muted)return;const o=ctx.createOscillator(),g=ctx.createGain();o.type=t;o.frequency.value=f;g.gain.value=v;o.connect(g);g.connect(ctx.destination);o.start();setTimeout(()=>o.stop(),d*1e3)}
 const s_deal=()=>beep(700,.04,'square'),s_click=()=>beep(500,.03,'triangle'),s_bust=()=>beep(250,.3,'sawtooth',.05),s_win=()=>{beep(880,.1,'square');setTimeout(()=>beep(990,.1,'square'),120)},s_lose=()=>beep(330,.12,'triangle'),s_push=()=>beep(660,.08,'sine');
 muteBtn.addEventListener('click',()=>{muted=!muted;muteBtn.textContent=muted?'🔇 Off':'🔊 On';s_click()});
 
-let shoe=[],bank=1000,betPerHand=25,dealer=[],playerHands=[],handBets=[],doubled=[],splitDone=[],insuranceOffered=false,insuranceBets=[],inRound=false,hideHole=true,blackjackPayout=1.5,activeHand=0,handFinished=[],awaitingInsurance=false;
+let shoe=[],bank=1000,betPerHand=25,dealer=[],playerHands=[],handBets=[],doubled=[],splitDone=[],insuranceBets=[],inRound=false,hideHole=true,blackjackPayout=1.5,activeHand=0,handFinished=[],awaitingInsurance=false;
 const suits=['♠','♥','♦','♣'],ranks=['A','2','3','4','5','6','7','8','9','10','J','Q','K'],sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const cardValue=r=>r==='A'?11:['J','Q','K'].includes(r)?10:parseInt(r,10);
 function handValue(cs){let t=0,a=0;for(const c of cs){t+=cardValue(c.rank);if(c.rank==='A')a++}while(t>21&&a>0){t-=10;a--}return t}
@@ -78,13 +85,38 @@ const isBlackjack=cs=>cs.length===2&&handValue(cs)===21;
 function isSoft(cs){let t=0,a=0;for(const c of cs){t+=cardValue(c.rank);if(c.rank==='A')a++}while(t>21&&a>0){t-=10;a--}return a>0&&t<=21}
 function newShoe(d){const s=[];for(let i=0;i<d;i++)for(const su of suits)for(const r of ranks)s.push({rank:r,suit:su});for(let i=s.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[s[i],s[j]]=[s[j],s[i]]}return s}
 function draw(){if(shoe.length===0)shoe=newShoe(parseInt(numDecksEl.value,10));s_deal();return shoe.pop()}
-function renderDealer(){dealerEl.innerHTML='';dealer.forEach((c,i)=>{const d=document.createElement('div'),red=(c.suit==='♥'||c.suit==='♦')?' red':'';if(hideHole&&i===1){d.className='card back';d.textContent='🂠'}else{d.className='card'+red;d.innerHTML=`<span class="small">${c.rank}</span><span class="big">${c.rank}</span><span class="suit">${c.suit}</span>`}dealerEl.appendChild(d)})}
+
+function renderDealer(){dealerEl.innerHTML='';dealer.forEach((c,i)=>{const d=document.createElement('div'),red=(c.suit==='♥'||c.suit==='♦')?' red':'';if(hideHole&&ruleSetEl.value==='vegas'&&i===1){d.className='card back';d.textContent='🂠'}else{d.className='card'+red;d.innerHTML=`<span class="small">${c.rank}</span><span class="big">${c.rank}</span><span class="suit">${c.suit}</span>`}dealerEl.appendChild(d)})}
 function renderHands(){playerHandsEl.innerHTML='';playerHands.forEach((h,idx)=>{const w=document.createElement('div');w.className='handWrap'+(idx===activeHand&&inRound&&!awaitingInsurance?' active':'');const hd=document.createElement('div');hd.className='handHeader';const v=handValue(h),ins=insuranceBets[idx]?` • Ins $${insuranceBets[idx]}`:'',dbl=doubled[idx]?' • 2x':'';hd.innerHTML=`<span>Hand ${idx+1}${splitDone[idx]?' • Split':''}</span><span class="pill">$${handBets[idx]}${dbl}${ins} • ${v}</span>`;const area=document.createElement('div');area.className='hand';h.forEach(c=>{const d=document.createElement('div'),red=(c.suit==='♥'||c.suit==='♦')?' red':'';d.className='card'+red;d.innerHTML=`<span class="small">${c.rank}</span><span class="big">${c.rank}</span><span class="suit">${c.suit}</span>`;area.appendChild(d)});w.appendChild(hd);w.appendChild(area);playerHandsEl.appendChild(w)});
-const h=playerHands[activeHand]||[];const canSplit=allowSplitEl.value==='true'&&h.length===2&&!splitDone[activeHand]&&h[0].rank===h[1].rank&&!awaitingInsurance;splitBtn.disabled=!inRound||!canSplit;insureBtn.disabled=!awaitingInsurance}
+const h=playerHands[activeHand]||[];const canSplit=allowSplitEl.value==='true'&&h.length===2&&!splitDone[activeHand]&&h[0]?.rank===h[1]?.rank&&!awaitingInsurance;splitBtn.disabled=!inRound||!canSplit;insureBtn.disabled=!(inRound&&awaitingInsurance&&ruleSetEl.value==='vegas')}
 const setStatus=m=>statusEl.textContent=m,updateBank=()=>bankEl.textContent=bank;
-function resetUIRound(a){hitBtn.disabled=!a||awaitingInsurance;standBtn.disabled=!a||awaitingInsurance;doubleBtn.disabled=!a||awaitingInsurance;newRoundBtn.disabled=a;dealBtn.disabled=a;betEl.disabled=a;numDecksEl.disabled=a;hitSoft17El.disabled=a;numHandsEl.disabled=a;allowSplitEl.disabled=a;resetBankBtn.disabled=a}
-function resetHands(){dealer=[];playerHands=[];handBets=[];doubled=[];splitDone=[];handFinished=[];insuranceBets=[];activeHand=0;hideHole=true;insuranceOffered=false;awaitingInsurance=false}
-const isAce=c=>c.rank==='A';
+function resetUIRound(a){hitBtn.disabled=!a||awaitingInsurance;standBtn.disabled=!a||awaitingInsurance;doubleBtn.disabled=!a||awaitingInsurance;newRoundBtn.disabled=a;dealBtn.disabled=a;betEl.disabled=a;numDecksEl.disabled=a;hitSoft17El.disabled=a;numHandsEl.disabled=a;allowSplitEl.disabled=a;ruleSetEl.disabled=a;resetBankBtn.disabled=a}
+function resetHands(){dealer=[];playerHands=[];handBets=[];doubled=[];splitDone=[];handFinished=[];insuranceBets=[];activeHand=0;hideHole=true;awaitingInsurance=false}
+
+function nextActiveHand(){for(let i=activeHand+1;i<playerHands.length;i++){if(!handFinished[i]){activeHand=i;renderHands();return true}}return false}
+const allHandsFinished=()=>handFinished.every(x=>x);
+
+function dealerPlay(){
+  // In European (no hole), dealer only had 1 upcard; draw hole card now
+  if(ruleSetEl.value==='euro'&&dealer.length===1){dealer.push(draw());renderDealer()}
+  hideHole=false;renderDealer();
+  const hitSoft=hitSoft17El.value==='true';
+  for(;;){const v=handValue(dealer),soft=isSoft(dealer);if(v<17){dealer.push(draw());renderDealer();continue}if(v===17&&soft&&hitSoft){dealer.push(draw());renderDealer();continue}break}
+}
+function settleAgainstDealer(i){
+  const p=handValue(playerHands[i]),d=handValue(dealer);
+  if(p>21){s_lose();return}
+  if(d>21){bank+=doubled[i]?handBets[i]*4:handBets[i]*2;s_win();return}
+  if(p>d){bank+=doubled[i]?handBets[i]*4:handBets[i]*2;s_win();return}
+  if(p===d){bank+=doubled[i]?handBets[i]*2:handBets[i];s_push();return}
+  s_lose();
+}
+function endRoundAfterPlayers(){
+  if(!allHandsFinished())return;
+  dealerPlay();
+  for(let i=0;i<playerHands.length;i++)settleAgainstDealer(i);
+  updateBank();inRound=false;resetUIRound(false);renderDealer();renderHands();setStatus("Round over. Tap New Round or Deal again.")
+}
 
 async function startRound(){
   betPerHand=Math.max(1,Math.floor(Number(betEl.value)||1));
@@ -93,26 +125,34 @@ async function startRound(){
   inRound=true;resetUIRound(true);resetHands();
   bank-=total;updateBank();
   for(let i=0;i<n;i++){playerHands.push([]);handBets.push(betPerHand);doubled.push(false);splitDone.push(false);handFinished.push(false);insuranceBets.push(0)}
-  dealer.push(draw());renderDealer();await sleep(200);
-  for(let r=0;r<2;r++){for(let i=0;i<n;i++){playerHands[i].push(draw());renderHands();await sleep(220)}dealer.push(draw());renderDealer();await sleep(200)}
-  if(dealer[0]&&isAce(dealer[0])){insuranceOffered=true;awaitingInsurance=true;setStatus("Dealer shows A — tap Insurance to place (½ bet/hand), tap again to continue.");renderHands();resetUIRound(true);return}
-  setStatus(`Your move on Hand 1: Hit / Stand / Double${canSplitNow()? ' / Split':''}.`);renderDealer();renderHands()
+  // Initial deal: players 2 cards round-robin, dealer: 1 upcard in EURO, 2 cards (up+hole) in VEGAS
+  for(let r=0;r<2;r++){
+    for(let i=0;i<n;i++){playerHands[i].push(draw());renderHands();await sleep(220)}
+    if(r===0){dealer.push(draw());renderDealer();await sleep(200)}
+    else if(ruleSetEl.value==='vegas'){dealer.push(draw());renderDealer();await sleep(200)} // hole card
+  }
+  // Insurance only in Vegas when dealer shows Ace
+  if(ruleSetEl.value==='vegas' && dealer[0] && dealer[0].rank==='A'){
+    awaitingInsurance=true;setStatus("Dealer shows A — tap Insurance to place (½ bet/hand), tap again to continue.");renderHands();resetUIRound(true);return
+  }
+  setStatus(`Your move on Hand 1: Hit / Stand / Double${(allowSplitEl.value==='true'&&(playerHands[0][0]?.rank===playerHands[0][1]?.rank))?' / Split':''}.`);
+  renderDealer();renderHands();
 }
-function canSplitNow(){const h=playerHands[activeHand]||[];return allowSplitEl.value==='true'&&h.length===2&&!splitDone[activeHand]&&h[0].rank===h[1].rank}
-function nextActiveHand(){for(let i=activeHand+1;i<playerHands.length;i++){if(!handFinished[i]){activeHand=i;renderHands();return true}}return false}
-const allHandsFinished=()=>handFinished.every(x=>x);
-function dealerPlay(){hideHole=false;renderDealer();const hitSoft=hitSoft17El.value==='true';for(;;){const v=handValue(dealer),soft=isSoft(dealer);if(v<17){dealer.push(draw());renderDealer();continue}if(v===17&&soft&&hitSoft){dealer.push(draw());renderDealer();continue}break}}
-function settleAgainstDealer(i){const p=handValue(playerHands[i]),d=handValue(dealer);if(p>21){s_lose();return}if(d>21){bank+=doubled[i]?handBets[i]*4:handBets[i]*2;s_win();return}if(p>d){bank+=doubled[i]?handBets[i]*4:handBets[i]*2;s_win();return}if(p===d){bank+=doubled[i]?handBets[i]*2:handBets[i];s_push();return}s_lose()}
-function endRoundAfterPlayers(){if(!allHandsFinished())return;dealerPlay();for(let i=0;i<playerHands.length;i++)settleAgainstDealer(i);updateBank();inRound=false;resetUIRound(false);renderDealer();renderHands();setStatus("Round over. Tap New Round or Deal again.")}
+
 function resolveInsurance(){
+  // Peek for dealer blackjack in Vegas mode (hole card)
   awaitingInsurance=false;resetUIRound(true);
   const dBJ=isBlackjack(dealer);
   if(dBJ){
-    for(let i=0;i<playerHands.length;i++){if(insuranceBets[i]>0){bank+=insuranceBets[i]*3;insuranceBets[i]=0}}
-    hideHole=false;renderDealer();
-    for(let i=0;i<playerHands.length;i++){const pBJ=isBlackjack(playerHands[i]);if(pBJ)bank+=handBets[i];handFinished[i]=true}
-    updateBank();inRound=false;resetUIRound(false);setStatus("Dealer has Blackjack. Insurance paid (if taken).");return
-  }else{setStatus("No dealer blackjack. Your move on Hand 1.")}
+    // Insurance pays 2:1, base bets lose unless player also has blackjack -> push base
+    for(let i=0;i<playerHands.length;i++){
+      if(insuranceBets[i]>0){bank+=insuranceBets[i]*3;insuranceBets[i]=0}
+      const pBJ=isBlackjack(playerHands[i]); if(pBJ) bank+=handBets[i]; handFinished[i]=true;
+    }
+    hideHole=false;renderDealer();updateBank();inRound=false;resetUIRound(false);setStatus("Dealer has Blackjack. Insurance paid (if taken).");return
+  } else {
+    setStatus("No dealer blackjack. Your move on Hand 1.")
+  }
 }
 
 hitBtn.addEventListener('click',()=>{if(!inRound||awaitingInsurance)return;const h=playerHands[activeHand];h.push(draw());renderHands();const v=handValue(h);if(v>21){s_bust();handFinished[activeHand]=true;if(!nextActiveHand())endRoundAfterPlayers();else setStatus(`Bust on Hand ${activeHand}. Your move on Hand ${activeHand+1}.`)}else{s_click();setStatus(`Hit again or Stand (Hand ${activeHand+1}).`)}});
@@ -121,12 +161,12 @@ standBtn.addEventListener('click',()=>{if(!inRound||awaitingInsurance)return;han
 
 doubleBtn.addEventListener('click',()=>{if(!inRound||awaitingInsurance)return;const i=activeHand,h=playerHands[i];if(h.length!==2){setStatus("You can only double on your first move for that hand.");return}if(bank<handBets[i]){setStatus("Not enough bank to double this hand.");return}bank-=handBets[i];updateBank();doubled[i]=true;h.push(draw());renderHands();const v=handValue(h);handFinished[i]=true;if(!nextActiveHand())endRoundAfterPlayers();else setStatus(v>21?`Bust after double. Your move on Hand ${activeHand+1}.`:`Doubled. Your move on Hand ${activeHand+1}.`)});
 
-splitBtn.addEventListener('click',()=>{if(!inRound||awaitingInsurance)return;const i=activeHand,h=playerHands[i];if(!(allowSplitEl.value==='true'&&h.length===2&&!splitDone[i]&&h[0].rank===h[1].rank)){setStatus("You can only split identical ranks on first move.");return}if(bank<handBets[i]){setStatus("Not enough bank to split (needs an extra bet).");return}bank-=handBets[i];updateBank();splitDone[i]=true;const second=h.pop(),newHand=[second],original=[h.pop()];playerHands[i]=original;playerHands.splice(i+1,0,newHand);handBets.splice(i+1,0,handBets[i]);doubled.splice(i+1,0,false);splitDone.splice(i+1,0,true);handFinished.splice(i+1,0,false);insuranceBets.splice(i+1,0,0);
+splitBtn.addEventListener('click',()=>{if(!inRound||awaitingInsurance)return;const i=activeHand,h=playerHands[i];if(!(allowSplitEl.value==='true'&&h.length===2&&!splitDone[i]&&h[0]?.rank===h[1]?.rank)){setStatus("You can only split identical ranks on first move.");return}if(bank<handBets[i]){setStatus("Not enough bank to split (needs an extra bet).");return}bank-=handBets[i];updateBank();splitDone[i]=true;const second=h.pop(),newHand=[second],original=[h.pop()];playerHands[i]=original;playerHands.splice(i+1,0,newHand);handBets.splice(i+1,0,handBets[i]);doubled.splice(i+1,0,false);splitDone.splice(i+1,0,true);handFinished.splice(i+1,0,false);insuranceBets.splice(i+1,0,0);
 const isAces=original[0].rank==='A'&&newHand[0].rank==='A';playerHands[i].push(draw());renderHands();playerHands[i+1].push(draw());renderHands();
 if(isAces){handFinished[i]=true;handFinished[i+1]=true;setStatus("Split Aces: one card each, then stand.");if(!nextActiveHand())endRoundAfterPlayers();return}
 setStatus(`Split! Continue on Hand ${activeHand+1}.`)});
 
-insureBtn.addEventListener('click',()=>{if(!inRound||!awaitingInsurance)return;let need=0,constHalfs=handBets.map(b=>Math.floor(b/2));for(let i=0;i<playerHands.length;i++)if(insuranceBets[i]===0)need+=constHalfs[i];
+insureBtn.addEventListener('click',()=>{if(!inRound||!awaitingInsurance||ruleSetEl.value!=='vegas')return;let need=0,constHalfs=handBets.map(b=>Math.floor(b/2));for(let i=0;i<playerHands.length;i++)if(insuranceBets[i]===0)need+=constHalfs[i];
 if(need>0&&bank>=need){for(let i=0;i<playerHands.length;i++)if(insuranceBets[i]===0)insuranceBets[i]=constHalfs[i];bank-=need;updateBank();setStatus("Insurance placed (½ bet each). Tap Insurance again to continue.");renderHands();return}
 resolveInsurance()});
 
@@ -134,7 +174,7 @@ dealBtn.addEventListener('click',()=>startRound());
 newRoundBtn.addEventListener('click',()=>{if(inRound)return;resetHands();setStatus("");renderDealer();renderHands();resetUIRound(false)});
 resetBankBtn.addEventListener('click',()=>{if(inRound)return;bank=1000;updateBank();setStatus("Bank reset to $1000.")});
 
-updateBank();shoe=newShoe(parseInt(numDecksEl.value,10));renderDealer();renderHands();setStatus("Choose hands & bet, then Deal.");resetUIRound(false);
+updateBank();shoe=newShoe(parseInt(numDecksEl.value,10));renderDealer();renderHands();setStatus("Choose rule set, hands & bet, then Deal.");resetUIRound(false);
 })();
 </script>
 </body></html>
