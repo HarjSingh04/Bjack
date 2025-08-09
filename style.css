@@ -124,6 +124,17 @@ main {
   background: repeating-linear-gradient(45deg, #19376d, #19376d 8px, #0b2447 8px, #0b2447 16px);
   color:#fff;
 }
+/* Dealing animation */
+.card.deal {
+  transform: translateY(-60px) scale(.9);
+  opacity: 0;
+  animation: none;
+}
+.card.deal.show {
+  transition: transform .28s ease, opacity .28s ease;
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
 
 /* ===== SEAT TOGGLE ===== */
 #seatToggle { display:flex; justify-content:center; gap:10px; flex-wrap: wrap; }
