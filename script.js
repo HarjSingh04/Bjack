@@ -145,12 +145,23 @@ function seatActive(i){ return i < activeSeatsCount; }
 // -------- Render --------
 function renderCard(el, card, faceDown=false){
   const d = document.createElement('div');
-  if(faceDown){ d.className='card back'; d.textContent='🂠'; el.appendChild(d); return; }
+  if(faceDown){
+    d.className = 'card back deal';
+    d.textContent = '🂠';
+    el.appendChild(d);
+    requestAnimationFrame(()=> d.classList.add('show'));
+    return;
+  }
   const red = (card.suit==='♥' || card.suit==='♦') ? ' red':'';
-  d.className='card'+red;
-  d.innerHTML = `<span class="small">${card.rank}</span><span class="big">${card.rank}</span><span class="suit">${card.suit}</span>`;
+  d.className = 'card deal' + red;
+  d.innerHTML = `<span class="small">${card.rank}</span>
+                 <span class="big">${card.rank}</span>
+                 <span class="suit">${card.suit}</span>`;
   el.appendChild(d);
+  // trigger transition next frame
+  requestAnimationFrame(()=> d.classList.add('show'));
 }
+
 
 function renderDealer(){
   dealerCardsEl.innerHTML='';
