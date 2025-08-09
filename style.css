@@ -16,7 +16,7 @@ body {
   background: var(--bg);
 }
 
-/* ===== LAYOUT WRAPPERS ===== */
+/* ===== LAYOUT ===== */
 header {
   max-width: 1000px;
   margin: 12px auto 0;
@@ -31,7 +31,7 @@ main {
 }
 #dealerArea, #seatsArea, #seatToggle, #chipsArea, #actionButtons { margin: 10px 0; }
 
-/* ===== PROFILE BUTTON (top-right) ===== */
+/* ===== PROFILE BUTTON ===== */
 .profile-btn {
   display: flex;
   align-items: center;
@@ -57,7 +57,7 @@ main {
 .avatar.large { width: 56px; height: 56px; font-size: 18px; }
 .dealer-avatar { background: #f59e0b; color: #1a1200; }
 
-/* ===== TABLE SURFACES ===== */
+/* ===== TABLE SURFACE ===== */
 #dealerArea, #seatsArea {
   background: var(--panel);
   border-radius: 16px;
@@ -72,7 +72,7 @@ main {
   opacity:.5; border-radius: 50% / 60%;
 }
 
-/* ===== SEATS GRID ===== */
+/* ===== SEATS GRID (3 columns on desktop, arc on mobile-ish we keep simple here) ===== */
 #seatsArea {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -100,7 +100,7 @@ main {
   border-radius: 999px;
   font-weight: 800;
   margin: 6px 0;
-  cursor: pointer; /* tap to remove chips */
+  cursor: pointer;
   user-select: none;
 }
 
@@ -124,7 +124,8 @@ main {
   background: repeating-linear-gradient(45deg, #19376d, #19376d 8px, #0b2447 8px, #0b2447 16px);
   color:#fff;
 }
-/* Dealing animation */
+
+/* Dealing animation (slow fly-in) */
 .card.deal {
   transform: translateY(-60px) scale(.9);
   opacity: 0;
@@ -147,18 +148,23 @@ main {
 /* ===== CHIPS ===== */
 #chipsArea { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; }
 .chip {
-  width: 52px; height: 52px; border-radius: 50%; border: none; cursor: pointer; font-weight: 900;
+  width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer; font-weight: 900;
   position: relative; box-shadow: 0 4px 10px rgba(0,0,0,.4); color:#111;
+  background: #fff;
+}
+.chip span { position: relative; z-index: 2; }
+.chip::before {
+  content:""; position:absolute; inset:0; border-radius:50%;
+  background: conic-gradient(#ddd 0 25%, var(--ring, #0b5) 0 50%, #ddd 0 75%, var(--ring, #0b5) 0);
 }
 .chip::after {
   content:"HS"; position:absolute; inset:10px; border-radius:50%;
-  background:#fff; display:grid; place-items:center; font-size:12px; font-weight:900;
+  background:#fff; display:grid; place-items:center; font-size:12px; font-weight:900; color:#111;
 }
-/* colored rings per chip value */
-.chip[data-value="5"]   { background: conic-gradient(#ddd 0 25%, #0b5 0 50%, #ddd 0 75%, #0b5 0); }
-.chip[data-value="20"]  { background: conic-gradient(#ddd 0 25%, #0af 0 50%, #ddd 0 75%, #0af 0); }
-.chip[data-value="50"]  { background: conic-gradient(#ddd 0 25%, #f59e0b 0 50%, #ddd 0 75%, #f59e0b 0); }
-.chip[data-value="100"] { background: conic-gradient(#ddd 0 25%, #8b5cf6 0 50%, #ddd 0 75%, #8b5cf6 0); }
+.chip[data-value="5"]   { --ring:#0b5; }
+.chip[data-value="20"]  { --ring:#0af; }
+.chip[data-value="50"]  { --ring:#f59e0b; }
+.chip[data-value="100"] { --ring:#8b5cf6; }
 
 /* Chip theme filters */
 body.chip-classic .chip { filter: none; }
@@ -175,7 +181,7 @@ body.chip-mono   .chip { filter: grayscale(100%) contrast(1.15); }
 #actionButtons button:disabled { opacity:.5; cursor:not-allowed; }
 #actionButtons button:hover:enabled { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,.25); }
 
-/* ===== PROFILE PANEL (slide-in) ===== */
+/* ===== PROFILE PANEL ===== */
 .panel {
   position: fixed;
   right: -320px;
@@ -212,7 +218,7 @@ body.chip-mono   .chip { filter: grayscale(100%) contrast(1.15); }
   color: #fff;
 }
 
-/* ===== THEMES (table background + surfaces) ===== */
+/* ===== THEMES ===== */
 body.theme-green  { background:#06301e; }
 body.theme-green  #dealerArea, body.theme-green  #seatsArea { background:#0f4a2b; }
 
@@ -222,8 +228,18 @@ body.theme-midnight #dealerArea, body.theme-midnight #seatsArea { background:#1c
 body.theme-classic { background:#1d1a24; }
 body.theme-classic #dealerArea, body.theme-classic #seatsArea { background:#2a2432; }
 
+/* ===== INSURANCE BAR ===== */
+.insurance {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  display:flex; gap:10px; align-items:center; justify-content:center;
+  background: #14213d; padding: 10px; z-index: 2000; box-shadow: 0 -6px 20px rgba(0,0,0,.35);
+}
+.insurance.hidden { display:none; }
+.insurance button {
+  background: var(--accent); border:none; padding:8px 12px; border-radius: 8px;
+  font-weight:800; color:#031926; cursor:pointer;
+}
+
 /* ===== UTIL ===== */
 .hidden { display:none !important; }
-
-/* Optional: make dealer total / hints stand out a little on mobile */
 #dealerTotal { color: var(--muted); font-weight: 800; }
