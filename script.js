@@ -302,34 +302,47 @@ async function startRound(){
   if(inRound) return;
   if(!validateBets()) return;
 
-  // Lock in bets and deduct from bank
+  const DEAL_GAP = 320; // ← was ~160–180; slower looks nicer
+
+  // lock in bets
   let total=0; for(let i=0;i<activeSeatsCount;i++) total+=handBets[i];
   setBank(bank - total);
 
   inRound = true;
   resetRoundState();
+  vegasHole = (ruleSet === 'vegas');
 
-  // first pass (players)
+  // First pass to each active seat
   for(let i=0;i<activeSeatsCount;i++){
-    playerHands[i].push(draw()); renderAll(); await sleep(160);
+    playerHands[i].push(draw());
+    renderAll();
+    await sleep(DEAL_GAP);
   }
-  // dealer upcard
-  dealer.push(draw()); renderAll(); await sleep(160);
 
-  // second pass (players)
+  // Dealer upcard
+  dealer.push(draw());
+  renderAll();
+  await sleep(DEAL_GAP);
+
+  // Second pass to each seat
   for(let i=0;i<activeSeatsCount;i++){
-    playerHands[i].push(draw()); renderAll(); await sleep(160);
+    playerHands[i].push(draw());
+    renderAll();
+    await sleep(DEAL_GAP);
   }
-  // dealer hole card if Vegas
-  if(vegasHole){ dealer.push(draw()); renderAll(); await sleep(100); }
 
-  // instant pay naturals
+  // Dealer hole (Vegas only)
+  if(vegasHole){
+    dealer.push(draw());
+    renderAll();
+    await sleep(DEAL_GAP);
+  }
+
   if(resolveNaturals()) return;
-
-  // seat 1 acts first
   activeHandIndex = 0;
   renderAll();
 }
+
 dealBtn.addEventListener('click', startRound);
 
 function resolveNaturals(){
