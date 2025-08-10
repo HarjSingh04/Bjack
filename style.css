@@ -142,3 +142,6 @@ body.theme-classic #dealerArea, body.theme-classic #seatsArea{ background:#2a243
 #seatsArea.trio .seat{ display:block; }
 .seat { overflow: visible; }
 .card { opacity: 1 !important; }
+#dealerArea { position: relative; z-index: 1; }
+#seatsArea  { position: relative; z-index: 2; }
+.seat .cards { position: relative; z-index: 20; }
