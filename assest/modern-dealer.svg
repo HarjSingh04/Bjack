@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 420" width="1600" height="420">
+  <defs>
+    <linearGradient id="felt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#103e6b"/>
+      <stop offset="100%" stop-color="#0a2a4a"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="18%" r="80%">
+      <stop offset="0%" stop-color="#2ad0ff" stop-opacity="0.25"/>
+      <stop offset="70%" stop-color="#2ad0ff" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#2ad0ff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- base rounded panel -->
+  <rect x="0" y="0" width="1600" height="420" rx="26" fill="#0f1931"/>
+  <!-- felt C-arc (dealer side) -->
+  <path d="M 100 320 Q 800 200 1500 320 Q 1550 340 1550 380 Q 1550 400 1530 400 L 70 400 Q 50 400 50 380 Q 50 340 100 320 Z"
+        fill="url(#felt)"/>
+  <!-- trim -->
+  <path d="M 140 340 Q 800 230 1460 340" fill="none" stroke="#f4d24b" stroke-opacity="0.28" stroke-width="3"/>
+  <!-- soft glow -->
+  <ellipse cx="800" cy="190" rx="660" ry="120" fill="url(#glow)"/>
+
+  <!-- stencil text -->
+  <g font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-weight="800" text-anchor="middle">
+    <text x="800" y="165" font-size="28" fill="#e7f7ff" fill-opacity="0.85" style="letter-spacing:1px;">BLACKJACK PAYS 3 TO 2</text>
+    <text x="800" y="198" font-size="20" fill="#d9e7ff" fill-opacity="0.75" style="letter-spacing:0.6px;">DEALER MUST STAND ON 17</text>
+    <text x="800" y="224" font-size="16" fill="#d9e7ff" fill-opacity="0.65" style="letter-spacing:0.5px;">INSURANCE PAYS 2 TO 1</text>
+  </g>
+</svg>
