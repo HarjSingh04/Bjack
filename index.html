@@ -28,8 +28,8 @@
       <div id="dealerTotal" class="total"></div>
     </section>
 
-    <!-- Player Seats (curved table). We toggle solo/duo/trio in JS -->
-    <section id="seatsArea" class="arc">
+    <!-- Player Seats (curved table) -->
+    <section id="seatsArea" class="arc solo">
       <!-- Seat 1 -->
       <div class="seat" data-seat="1">
         <div class="avatar seat-avatar">HS</div>
@@ -73,11 +73,11 @@
 
     <!-- Actions -->
     <div id="actionButtons">
-      <button id="dealBtn">Deal</button>
-      <button id="hitBtn" disabled>Hit</button>
+      <button id="dealBtn" class="always">Deal</button>
+      <button id="hitBtn"  disabled>Hit</button>
       <button id="standBtn" disabled>Stand</button>
       <button id="doubleBtn" disabled>Double</button>
-      <button id="splitBtn" disabled>Split</button>
+      <button id="splitBtn"  disabled>Split</button>
     </div>
   </main>
 
@@ -115,7 +115,7 @@
     <div class="settings-group">
       <label>Rules</label>
       <select id="ruleSet">
-        <option value="crown" selected>Crown Casino (S17, ENHC)</option>
+        <option value="crown" selected>Crown (S17, ENHC)</option>
         <option value="vegas">Vegas (hole card + Insurance)</option>
       </select>
     </div>
@@ -138,14 +138,13 @@
     <button id="insNo">No</button>
   </div>
 
-  <!-- Build badge (helps verify fresh build) -->
+  <!-- Build badge -->
   <div id="buildBadge" style="
     position:fixed;right:10px;bottom:10px;background:#14213d;color:#fff;
     padding:6px 10px;border-radius:8px;font:600 12px/1.2 system-ui;opacity:.9;z-index:9999">
     loading…
   </div>
 
-  <!-- App -->
   <script src="script.js"></script>
 </body>
 </html>
