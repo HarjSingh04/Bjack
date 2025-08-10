@@ -1,5 +1,5 @@
-/* HS Blackjack — ENHC slow deal + Rebet + fade-out */
-var BUILD = 'stable-2025-08-10-iii';
+/* HS Blackjack — ENHC slow deal + Rebet + fade-out + bank guard */
+var BUILD = 'stable-2025-08-10-iv';
 var DEBUG_FORCE = false; // live
 
 // cache-buster (?fresh=1)
@@ -24,6 +24,13 @@ const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const byId = id => document.getElementById(id);
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+/* sum of all staged bets on visible seats */
+function stagedSum(){
+  let sum = 0;
+  for (let i = 0; i < activeSeatsCount; i++) sum += (stagedBets[i] || 0);
+  return sum;
+}
 
 /* ------------ state ------------ */
 let playerBank = 1000;
@@ -103,13 +110,25 @@ function applySeatLayout(){
 
 /* ------------ chips + stacks ------------ */
 function initChips(){
+  // PREVENT OVER-BETTING: block chip taps that would exceed bank
   $$('#chipsArea .chip-img').forEach(chip => {
     chip.addEventListener('click', () => {
       if (inRound) return;
       const val = parseInt(chip.getAttribute('data-value'),10);
+
+      // active seat
       let idx = seats.findIndex(s => s.root.classList.contains('active'));
       if (idx<0) idx=0;
       if (idx>=activeSeatsCount) return;
+
+      // NEW: total staged + this chip must not exceed bank
+      if (stagedSum() + val > playerBank) {
+        const tray = byId('chipsArea');
+        tray?.classList.add('shake');
+        setTimeout(()=> tray?.classList.remove('shake'), 250);
+        return;
+      }
+
       stagedBets[idx]+=val;
       seats[idx].bet && (seats[idx].bet.textContent = '$'+stagedBets[idx]);
       addChipToken(idx,val);
@@ -178,7 +197,7 @@ function initActions(){
   byId('hitBtn')?.addEventListener('click', doHit);
   byId('standBtn')?.addEventListener('click', doStand);
   byId('doubleBtn')?.addEventListener('click', doDouble);
-  byId('splitBtn')?.addEventListener('click', ()=>{}); // later
+  byId('splitBtn')?.addEventListener('click', ()=>{}); // will add later
 }
 function setBtn(sel,on){ const b=$(sel); if(!b) return; b.disabled=!on; b.classList.toggle('dimmed', !on); }
 function setButtons(h,s,d,sp){ setBtn('#hitBtn',h); setBtn('#standBtn',s); setBtn('#doubleBtn',d); setBtn('#splitBtn',sp); }
@@ -188,7 +207,7 @@ function updateRebetButton(){
   const enough = playerBank >= need && need>0 && !inRound;
   btn.disabled = !enough; btn.classList.toggle('dimmed', !enough);
 }
-function updateRebetButtonPreview(){ // enable if there is a staged bet right now (lets player know they can repeat next time)
+function updateRebetButtonPreview(){
   const btn = byId('rebetBtn'); if(!btn) return;
   const need = (stagedBets[0]||0) + (stagedBets[1]||0) + (stagedBets[2]||0);
   btn.disabled = need===0 || inRound;
@@ -286,9 +305,9 @@ function hideInsuranceBar(){
 
 /* ------------ round flow (ENHC) ------------ */
 async function startRound(){
-  // must have a bet
-  let any=false; for(let i=0;i<activeSeatsCount;i++) if(stagedBets[i]>0) any=true;
-  if(!any) return;
+  // must have a bet and it must be affordable
+  const need = stagedSum();
+  if (need <= 0 || need > playerBank) return;
 
   inRound=true; setButtons(false,false,false,false); updateRebetButton();
 
@@ -311,10 +330,7 @@ async function startRound(){
   if (DEBUG_FORCE){
     hands[0].push({rank:'A',suit:'♠',hidden:false}); hands[0].push({rank:'K',suit:'♥',hidden:false});
     dealer.push({rank:'3',suit:'♣',hidden:false});
-    // ENHC: NO dealer hole now
-    // slow render
     await slowDealRender();
-    // Natural BJ auto-pay
     if (isBJ(hands[0])) { playerBank += Math.floor(handBets[0]*2.5); renderBank(); await endRoundFadeAndReset(); return; }
     setButtons(true,true,canDouble(0),false); updateRebetButton(); return;
   }
@@ -324,13 +340,13 @@ async function startRound(){
   for (let i=0;i<activeSeatsCount;i++){ const c=draw(); c.hidden=false; hands[i].push(c); await slowDealRender(); }
   const du = draw(); du.hidden=false; dealer.push(du); await slowDealRender();
 
-  // Pass 2: each player gets second card (dealer gets NO hole card here)
+  // Pass 2: each player gets second card (dealer does NOT take a hole card now)
   for (let i=0;i<activeSeatsCount;i++){ const c=draw(); c.hidden=false; hands[i].push(c); await slowDealRender(); }
 
-  // Insurance decision (offer only if dealer upcard Ace and player doesn't have BJ)
+  // Insurance decision
   if (dealer[0] && dealer[0].rank==='A' && !isBJ(hands[0])) showInsuranceBar(); else hideInsuranceBar();
 
-  // Natural blackjack auto-pay (player)
+  // Natural blackjack auto-pay (player) 3:2
   if (isBJ(hands[0])) {
     playerBank += Math.floor(handBets[0]*2.5);
     renderBank();
@@ -344,7 +360,6 @@ async function startRound(){
 }
 
 async function slowDealRender(){
-  // incremental render (only append last card for each hand/dealer with animation)
   const dcon = byId('dealerCards');
   if (dcon){ dcon.innerHTML=''; for(const cd of dealer) putCard(dcon, cd, true); }
   if (byId('dealerTotal')) byId('dealerTotal').textContent = total(dealer);
@@ -391,7 +406,6 @@ async function doDouble(){
 async function doStand(){
   if(!inRound) return;
   finished[activeSeat]=true;
-  // Single-seat flow now goes straight to dealer play
   await dealerPlayAndSettle_ENHC();
 }
 
@@ -411,13 +425,13 @@ async function dealerPlayAndSettle_ENHC(){
     else break;
   }
 
-  // Resolve insurance (2:1 if dealer has BJ — rare in ENHC since hole just drawn; still honoring your request)
+  // Resolve insurance (2:1 if dealer has BJ)
   if (insuranceWager>0){
-    if (isBJ(dealer)) playerBank += insuranceWager*3; // stake back + 2:1
+    if (isBJ(dealer)) playerBank += insuranceWager*3;
     insuranceWager=0; renderBank();
   }
 
-  // settle seat 1 (we’ll extend to 2–3 later)
+  // settle seat 1 (extend later)
   const bet=handBets[0], dbl=doubled[0], p=Number(total(hands[0])), d=Number(total(dealer));
   if (p>21){ /* lose */ }
   else if (d>21){ playerBank += bet*(dbl?4:2); }
@@ -431,12 +445,10 @@ async function dealerPlayAndSettle_ENHC(){
 
 /* ------------ Round end fade + reset ------------ */
 async function endRoundFadeAndReset(){
-  // fade all cards
   byId('dealerArea')?.classList.add('fade-out');
   $$('#seatsArea .seat').forEach(seat=> seat.classList.add('fade-out'));
   await sleep(380);
 
-  // clear visuals & state
   byId('dealerCards')?.replaceChildren(); if(byId('dealerTotal')) byId('dealerTotal').textContent='';
   for(let i=0;i<3;i++){ handContainer(i)?.replaceChildren(); if(totalContainer(i)) totalContainer(i).textContent=''; }
   clearStacksAndBets();
@@ -444,18 +456,18 @@ async function endRoundFadeAndReset(){
 
   inRound=false;
   setButtons(false,false,false,false);
-  updateRebetButton(); // now lastStagedBets is available
+  updateRebetButton();
 }
 
 /* ------------ Rebet ------------ */
 function doRebet(){
   if (inRound) return;
+
+  const needed = (lastStagedBets[0]||0) + (lastStagedBets[1]||0) + (lastStagedBets[2]||0);
+  if (needed <= 0 || playerBank < needed) { updateRebetButton(); return; }
+
   // clear any currently staged chips first
   clearStacksAndBets();
-
-  // apply last staged bets if affordable
-  let needed = (lastStagedBets[0]||0) + (lastStagedBets[1]||0) + (lastStagedBets[2]||0);
-  if (needed<=0 || playerBank < needed){ updateRebetButton(); return; }
 
   // Stage onto visible seats only; build stack tokens visually
   for (let i=0;i<activeSeatsCount;i++){
