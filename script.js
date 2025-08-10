@@ -306,46 +306,66 @@ function renderCard(el, card){
 
 /* -------- Deal sequence -------- */
 function startRound(){
-  if(inRound) return;
-  // must have at least one bet
+  console.log('startRound() called');
+  // need some bet
   var any=false; for(var i=0;i<activeSeatsCount;i++) if(stagedBets[i]>0) any=true;
-  if(!any) return;
+  if(!any){ console.log('no bet'); return; }
 
-  // init round
-  inRound=true; dealer=[]; hands=[[],[],[]]; handBets=[0,0,0]; doubled=[false,false,false]; splitCount=[0,0,0]; finished=[false,false,false];
-  activeSeat=0; hideHole = (ruleSet==='crown'); insuranceOffered=false; insuranceTaken=false; insuranceStake=0;
+  inRound = true;
+  dealer=[]; hands=[[],[],[]]; handBets=[0,0,0]; finished=[false,false,false];
+  activeSeat=0; hideHole = (ruleSet==='crown');
 
-  // lock bets + subtract from bank
-  for(i=0;i<activeSeatsCount;i++){ handBets[i]=stagedBets[i]; playerBank-=handBets[i]; }
-  renderBank();
-  lockStacks();
+  for(var i=0;i<activeSeatsCount;i++){ handBets[i]=stagedBets[i]; playerBank-=handBets[i]; }
+  renderBank(); lockStacks();
 
-  // clear visuals
-  $('#dealerCards').innerHTML=''; $('#dealerTotal').textContent='';
-  for(i=0;i<activeSeatsCount;i++){ seats[i].cards.innerHTML=''; seats[i].total.textContent=''; }
+  // Deterministic test cards (no shoe, no timers)
+  // Player seat 1 gets A♠ + K♥ (21), dealer shows 8♣ + hole
+  hands[0].push({rank:'A', suit:'♠', hidden:false});
+  hands[0].push({rank:'K', suit:'♥', hidden:false});
+  dealer.push({rank:'8', suit:'♣', hidden:false});
+  dealer.push({rank:'Q', suit:'♦', hidden:true});
 
-  // deal order: P1..Pn, Dealer up, P1..Pn, Dealer (hole/face)
-  ensureShoe();
-  var seq=[], s;
-
-  for(s=0;s<activeSeatsCount;s++) seq.push({to:'P', seat:s, hidden:false});
-  seq.push({to:'D', hidden:false});
-  for(s=0;s<activeSeatsCount;s++) seq.push({to:'P', seat:s, hidden:false});
-  seq.push({to:'D', hidden: hideHole}); // hole in Crown, face in Vegas
-
-  function step(k){
-    if(k>=seq.length){ afterInitialDeal(); return; }
-    var a=seq[k];
-    if(a.to==='P'){
-      var c = draw(); c.hidden=false; hands[a.seat].push(c);
-      renderAll();
-    }else{
-      var d = draw(); d.hidden = a.hidden; dealer.push(d);
-      renderAll();
-    }
-    setTimeout(function(){ step(k+1); }, DEAL_GAP);
+  // If you have 2–3 seats visible, give them simple hands too
+  if(activeSeatsCount>=2){
+    hands[1].push({rank:'9', suit:'♠', hidden:false});
+    hands[1].push({rank:'7', suit:'♦', hidden:false});
   }
-  step(0);
+  if(activeSeatsCount>=3){
+    hands[2].push({rank:'5', suit:'♣', hidden:false});
+    hands[2].push({rank:'6', suit:'♥', hidden:false});
+  }
+
+  // render WITHOUT animation classes (to rule out CSS issues)
+  function renderCardNoAnim(el, card){
+    var c = document.createElement('div');
+    if(card.hidden){
+      c.className='card back';
+      c.textContent='🂠';
+    }else{
+      var red = (card.suit==='♥'||card.suit==='♦')?' red':'';
+      c.className='card'+red;
+      c.innerHTML = '<span class="small">'+card.rank+
+        '</span><span class="big">'+card.rank+
+        '</span><span class="suit">'+card.suit+'</span>';
+    }
+    el.appendChild(c);
+  }
+
+  // dealer
+  var dcon = document.getElementById('dealerCards');
+  dcon.innerHTML='';
+  for(var d=0; d<dealer.length; d++) renderCardNoAnim(dcon, dealer[d]);
+  document.getElementById('dealerTotal').textContent = total(dealer);
+
+  // players
+  for(var s=0;s<activeSeatsCount;s++){
+    var con = seats[s].cards;
+    con.innerHTML='';
+    for(var k=0;k<hands[s].length;k++) renderCardNoAnim(con, hands[s][k]);
+    seats[s].total.textContent = total(hands[s]);
+  }
+
+  console.log('rendered. P1 len=', hands[0].length, 'Dealer len=', dealer.length);
 }
 
 function afterInitialDeal(){
