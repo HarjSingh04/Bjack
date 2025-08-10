@@ -145,3 +145,11 @@ body.theme-classic #dealerArea, body.theme-classic #seatsArea{ background:#2a243
 #dealerArea { position: relative; z-index: 1; }
 #seatsArea  { position: relative; z-index: 2; }
 .seat .cards { position: relative; z-index: 20; }
+/* Ensure players sit above dealer visually */
+#dealerArea { position: relative; z-index: 1; }
+#seatsArea  { position: relative; z-index: 2; }
+.seat .cards { position: relative; z-index: 20; }
+
+/* Debug outlines (remove when happy) */
+body[data-debug="1"] .seat { outline: 1px dashed rgba(255,255,255,.25); }
+body[data-debug="1"] #dealerArea { outline: 1px dashed rgba(255,200,0,.25); }
