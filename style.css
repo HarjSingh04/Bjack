@@ -153,3 +153,24 @@ body.theme-classic #dealerArea, body.theme-classic #seatsArea{ background:#2a243
 /* Debug outlines (remove when happy) */
 body[data-debug="1"] .seat { outline: 1px dashed rgba(255,255,255,.25); }
 body[data-debug="1"] #dealerArea { outline: 1px dashed rgba(255,200,0,.25); }
+/* --- Fix: solo seat sits too low / gets hidden by chips --- */
+#seatsArea.arc { height: 460px; }              /* more vertical room for cards */
+#seatsArea.solo .seat[data-seat="1"] {
+  top: 140px;                                  /* was 210px – move up */
+  left: 50%;
+  transform: translateX(-50%) rotate(0deg);
+}
+
+/* Keep duo slightly higher too, for safety */
+#seatsArea.duo .seat[data-seat="1"] { top: 170px; }
+#seatsArea.duo .seat[data-seat="2"] { top: 170px; }
+
+/* Make sure UI layers don’t cover cards */
+#dealerArea { position: relative; z-index: 1; }
+#seatsArea  { position: relative; z-index: 2; }
+.seat       { position: relative; z-index: 3; }
+.seat .cards{ position: relative; z-index: 4; }
+
+/* Give chip strip and buttons their own space (below seats) */
+#chipsArea      { margin-top: 18px; position: relative; z-index: 1; }
+#actionButtons  { margin-top: 14px; position: relative; z-index: 1; }
