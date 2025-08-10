@@ -175,3 +175,30 @@ button.dimmed{opacity:.4;pointer-events:none}
   background:var(--accent); color:#031926;
   border:none; border-radius:8px; padding:6px 10px; font-weight:800; cursor:pointer;
 }
+/* ========== Round-end fade (discard animation) ========== */
+.fade-out .card {
+  transition: transform .35s ease, opacity .35s ease;
+  transform: translateY(30px) scale(.92);
+  opacity: 0;
+}
+
+/* Slightly slower visible dealing without JS transforms (just a safety baseline) */
+.card.deal-slow {
+  opacity: 0;
+  transform: translateY(-20px) scale(.96);
+  transition: transform .28s ease, opacity .28s ease;
+}
+.card.deal-slow.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Center totals a bit more on the seats (you asked for centered feel) */
+.seat .total {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* When many cards, keep the fan centered and tighten a touch more */
+.seat.tight .cards .card   { transform: scale(.9); }
+.seat.tighter .cards .card { transform: scale(.82); }
