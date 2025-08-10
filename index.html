@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Blackjack — HS Edition</title>
   <link rel="stylesheet" href="style.css" />
+  <meta name="theme-color" content="#0b132b" />
 </head>
 <body class="theme-midnight chip-classic">
-
-  <!-- Profile Hub Button -->
+  <!-- Header / Profile Hub -->
   <header>
-    <div id="profileBtn" class="profile-btn" title="Profile">
+    <div id="profileBtn" class="profile-btn" title="Profile & Settings">
       <div class="avatar" id="playerAvatar">HS</div>
       <div class="profile-info">
         <span id="playerName">Player</span>
@@ -19,52 +19,59 @@
     </div>
   </header>
 
-  <!-- Game Table -->
+  <!-- Table -->
   <main>
-    <!-- Dealer Area -->
+    <!-- Dealer -->
     <section id="dealerArea">
       <div class="avatar dealer-avatar">D</div>
       <div id="dealerCards" class="cards"></div>
       <div id="dealerTotal" class="total"></div>
     </section>
 
-    <!-- Curved Seats -->
+    <!-- Player Seats (curved table). We toggle solo/duo/trio in JS -->
     <section id="seatsArea" class="arc">
+      <!-- Seat 1 -->
       <div class="seat" data-seat="1">
         <div class="avatar seat-avatar">HS</div>
-        <div class="bet" id="bet1" title="Click to remove chips">$0</div>
+        <div class="bet" id="bet1" title="Tap to remove last chip">$0</div>
+        <div class="bet-stack" id="stack1"></div>
         <div class="cards" id="hand1"></div>
         <div class="total" id="total1"></div>
       </div>
+      <!-- Seat 2 -->
       <div class="seat" data-seat="2">
         <div class="avatar seat-avatar">HS</div>
-        <div class="bet" id="bet2" title="Click to remove chips">$0</div>
+        <div class="bet" id="bet2" title="Tap to remove last chip">$0</div>
+        <div class="bet-stack" id="stack2"></div>
         <div class="cards" id="hand2"></div>
         <div class="total" id="total2"></div>
       </div>
+      <!-- Seat 3 -->
       <div class="seat" data-seat="3">
         <div class="avatar seat-avatar">HS</div>
-        <div class="bet" id="bet3" title="Click to remove chips">$0</div>
+        <div class="bet" id="bet3" title="Tap to remove last chip">$0</div>
+        <div class="bet-stack" id="stack3"></div>
         <div class="cards" id="hand3"></div>
         <div class="total" id="total3"></div>
       </div>
     </section>
 
-    <!-- Seat Toggle -->
+    <!-- Seat count toggle -->
     <div id="seatToggle">
       <button data-seats="1" class="active">1 Seat</button>
       <button data-seats="2">2 Seats</button>
       <button data-seats="3">3 Seats</button>
     </div>
 
-    <!-- Chips & Actions -->
+    <!-- Chip tray (image-style chips) -->
     <div id="chipsArea">
-      <button class="chip" data-value="5"><span>$5</span></button>
-      <button class="chip" data-value="20"><span>$20</span></button>
-      <button class="chip" data-value="50"><span>$50</span></button>
-      <button class="chip" data-value="100"><span>$100</span></button>
+      <button class="chip-img chip-5"   data-value="5"><span>$5</span></button>
+      <button class="chip-img chip-20"  data-value="20"><span>$20</span></button>
+      <button class="chip-img chip-50"  data-value="50"><span>$50</span></button>
+      <button class="chip-img chip-100" data-value="100"><span>$100</span></button>
     </div>
 
+    <!-- Actions -->
     <div id="actionButtons">
       <button id="dealBtn">Deal</button>
       <button id="hitBtn" disabled>Hit</button>
@@ -74,7 +81,7 @@
     </div>
   </main>
 
-  <!-- Profile Hub Panel -->
+  <!-- Profile/Settings Panel -->
   <div id="profilePanel" class="panel">
     <div class="profile-header">
       <div class="avatar large" id="profileAvatar">HS</div>
@@ -83,7 +90,7 @@
     </div>
 
     <div class="settings-group">
-      <label>Table Theme:</label>
+      <label>Table Theme</label>
       <select id="themeSelect">
         <option value="midnight" selected>Midnight</option>
         <option value="green">Green</option>
@@ -92,7 +99,7 @@
     </div>
 
     <div class="settings-group">
-      <label>Chip Theme:</label>
+      <label>Chip Theme</label>
       <select id="chipTheme">
         <option value="classic" selected>Classic</option>
         <option value="neon">Neon</option>
@@ -101,42 +108,44 @@
     </div>
 
     <div class="settings-group">
-      <label>Sound:</label>
+      <label>Sound</label>
       <input type="checkbox" id="soundToggle" checked />
     </div>
 
     <div class="settings-group">
-      <label>Rules:</label>
+      <label>Rules</label>
       <select id="ruleSet">
         <option value="crown" selected>Crown Casino (S17, ENHC)</option>
-        <option value="vegas">Vegas (hole card + insurance)</option>
+        <option value="vegas">Vegas (hole card + Insurance)</option>
       </select>
     </div>
 
     <div class="settings-group">
-      <label>Decks:</label>
+      <label>Decks</label>
       <input type="number" id="deckCount" min="1" max="8" value="6" />
     </div>
 
     <div class="settings-group">
-      <button id="resetStats" disabled>Reset Stats</button>
-      <button id="resetBank" disabled>Reset Bank</button>
+      <button id="resetStats">Reset Stats</button>
+      <button id="resetBank">Reset Bank</button>
     </div>
   </div>
 
-  <!-- Insurance prompt -->
+  <!-- Insurance prompt (Vegas mode) -->
   <div id="insuranceBar" class="insurance hidden">
     <span>Dealer shows Ace. Take Insurance?</span>
     <button id="insYes">Yes</button>
     <button id="insNo">No</button>
   </div>
 
-  <script src="script.js"></script>
-<div id="buildBadge" style="
-  position:fixed;right:10px;bottom:10px;background:#14213d;color:#fff;
-  padding:6px 10px;border-radius:8px;font:600 12px/1.2 system-ui;opacity:.9;z-index:9999">
-  loading…
-</div>
+  <!-- Build badge (helps verify fresh build) -->
+  <div id="buildBadge" style="
+    position:fixed;right:10px;bottom:10px;background:#14213d;color:#fff;
+    padding:6px 10px;border-radius:8px;font:600 12px/1.2 system-ui;opacity:.9;z-index:9999">
+    loading…
+  </div>
 
+  <!-- App -->
+  <script src="script.js"></script>
 </body>
 </html>
