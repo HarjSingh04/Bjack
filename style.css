@@ -1,10 +1,12 @@
-/* HS Blackjack — full layout + chips + insurance (stable, Aug-10) */
+/* HS Blackjack — Round table + payout bubbles + current UI (Aug-10) */
 
 /* ===== Reset / Base ===== */
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
 :root{
-  --bg:#0b132b; --panel:#1c2541; --accent:#5bc0be; --text:#fff;
+  --bg:#0b132b; --panel:#0f1a32; --felt:#1a7a3b; --felt-dark:#0e5a2a;
+  --accent:#5bc0be; --text:#fff; --ink:#031926;
+  --box:#16314a; --seat:#14243f;
 }
 body{
   font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
@@ -12,7 +14,7 @@ body{
 }
 
 /* ===== Header & Main ===== */
-header{max-width:1000px;margin:12px auto 0;padding:0 12px;display:flex;justify-content:flex-end}
+header{max-width:1060px;margin:12px auto 0;padding:0 12px;display:flex;justify-content:flex-end}
 main{max-width:1100px;margin:0 auto;padding:12px}
 #dealerArea,#seatsArea,#seatToggle,#chipsArea,#actionButtons{margin:10px 0}
 
@@ -20,18 +22,37 @@ main{max-width:1100px;margin:0 auto;padding:12px}
 .profile-btn{display:flex;align-items:center;gap:10px;background:#3a506b;padding:8px 12px;border-radius:999px;cursor:pointer;user-select:none}
 .profile-info{display:flex;flex-direction:column;line-height:1.1}
 #playerName{font-weight:800} #playerBank{font-weight:700;opacity:.9}
-.avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:900;background:var(--accent);color:#031926}
+.avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:900;background:var(--accent);color:var(--ink)}
 .dealer-avatar{background:#f59e0b;color:#1a1200}
 
-/* ===== Table Surfaces ===== */
+/* ===== Rounded Casino Table ===== */
 #dealerArea,#seatsArea{
-  background:var(--panel); border-radius:16px; padding:12px;
-  box-shadow:0 10px 30px rgba(0,0,0,.35); position:relative; overflow:hidden;
+  background:var(--panel); border-radius:18px; padding:14px 14px 18px;
+  box-shadow:0 12px 36px rgba(0,0,0,.35); position:relative; overflow:hidden;
 }
+
+/* Dealer “C” arc felt */
 #dealerArea::before{
-  content:""; position:absolute; inset:-20% -10% auto -10%; height:70%;
-  background:radial-gradient(ellipse at 50% 120%,#14532d,#0b3d23 60%,transparent 65%);
-  opacity:.5; border-radius:50%/60%;
+  content:""; position:absolute; inset:6% 4% auto 4%; height:72%;
+  background:
+    radial-gradient(120% 100% at 50% 120%, var(--felt) 0, var(--felt-dark) 55%, transparent 56%);
+  border-radius:50%/60%;
+  opacity:.95; z-index:0;
+}
+
+/* Curved player felt with three bays */
+#seatsArea{min-height:460px}
+#seatsArea::before{
+  content:""; position:absolute; inset:auto 4% 8% 4%; top:0; height:90%;
+  background:
+    radial-gradient(110% 92% at 50% -10%, var(--felt) 0, var(--felt-dark) 55%, transparent 57%);
+  border-radius:50%/55%; opacity:.95; z-index:0;
+}
+#seatsArea::after{
+  /* thin gold trim like casino stencil */
+  content:""; position:absolute; inset:auto 8% 15% 8%; top:16%;
+  border-radius:50%/60%;
+  border:2px solid #e7c83a22; pointer-events:none; z-index:1;
 }
 
 /* ===== Cards ===== */
@@ -51,47 +72,51 @@ main{max-width:1100px;margin:0 auto;padding:12px}
 .card.red{color:#c1121f}
 .card.back{background:repeating-linear-gradient(45deg,#19376d,#19376d 8px,#0b2447 8px,#0b2447 16px);color:#fff}
 
-/* Slow-deal animation helpers (JS toggles .deal-slow/.show) */
-.card.deal-slow{opacity:0;transform:translateY(-20px) scale(.96);transition:transform .28s ease,opacity .28s ease}
+/* Slow-deal helpers (JS toggles .deal-slow/.show) */
+.card.deal-slow{opacity:0;transform:translateY(-24px) scale(.95);transition:transform .32s ease,opacity .32s ease}
 .card.deal-slow.show{opacity:1;transform:translateY(0) scale(1)}
 
 /* Round-end fade */
-.fade-out .card{transition:transform .35s ease,opacity .35s ease;transform:translateY(30px) scale(.92);opacity:0}
+.fade-out .card{transition:transform .38s ease,opacity .38s ease;transform:translateY(32px) scale(.92);opacity:0}
 
-/* ===== Seats (arc layout) ===== */
-#seatsArea.arc{position:relative;height:460px;display:block}
+/* ===== Seats laid on the arc ===== */
+#seatsArea.arc{position:relative;display:block}
 #seatsArea.arc .seat{
   position:absolute; width:30%; min-width:280px; left:50%;
-  transform:translateX(-50%); overflow:visible;
+  transform:translateX(-50%); overflow:visible; z-index:2;
+  background:var(--seat); border-radius:14px; padding:12px 12px 16px;
+  outline:2px solid transparent; transition:outline-color .15s, box-shadow .15s;
 }
-#seatsArea.arc .seat[data-seat="1"]{top:140px;transform:translateX(-160%) rotate(-6deg)}
-#seatsArea.arc .seat[data-seat="2"]{top:170px;transform:translateX(-50%) rotate(0)}
-#seatsArea.arc .seat[data-seat="3"]{top:140px;transform:translateX(60%) rotate(6deg)}
+#seatsArea.arc .seat[data-seat="1"]{top:150px;transform:translateX(-160%) rotate(-6deg)}
+#seatsArea.arc .seat[data-seat="2"]{top:182px;transform:translateX(-50%) rotate(0)}
+#seatsArea.arc .seat[data-seat="3"]{top:150px;transform:translateX(60%) rotate(6deg)}
 
 @media (max-width:820px){
-  #seatsArea.arc{height:auto}
-  #seatsArea.arc .seat{position:static;width:100%;transform:none;min-width:0;margin-bottom:12px}
+  #seatsArea{min-height:auto}
+  #seatsArea.arc .seat{position:static;width:100%;transform:none;min-width:0;margin:10px 0}
 }
 
 /* Solo / Duo / Trio visibility */
 #seatsArea.solo .seat{display:none}
-#seatsArea.solo .seat[data-seat="1"]{display:block;top:140px;left:50%;transform:translateX(-50%) rotate(0)}
+#seatsArea.solo .seat[data-seat="1"]{display:block}
 #seatsArea.duo .seat{display:none}
-#seatsArea.duo .seat[data-seat="1"]{display:block;top:170px;transform:translateX(-110%) rotate(-4deg)}
-#seatsArea.duo .seat[data-seat="2"]{display:block;top:170px;transform:translateX(10%) rotate(4deg)}
+#seatsArea.duo .seat[data-seat="1"]{display:block}
+#seatsArea.duo .seat[data-seat="2"]{display:block}
 #seatsArea.trio .seat{display:block}
 
-.seat{
-  background:#162238;border-radius:12px;padding:10px;
-  outline:2px solid transparent; transition:outline-color .15s, box-shadow .15s;
-}
 .seat.active{outline-color:var(--accent);box-shadow:0 0 18px rgba(91,192,190,.25)}
 
-/* Optional seat avatar */
+/* Little player name token */
 .seat .seat-avatar{
   position:absolute; top:-14px; left:-14px; width:36px; height:36px; border-radius:50%;
   display:grid; place-items:center; font-weight:900; background:#3ddc97; color:#032b2b;
   box-shadow:0 2px 8px rgba(0,0,0,.35); z-index:6;
+}
+
+/* Player betting rectangles (visual only) */
+.seat::after{
+  content:""; position:absolute; inset:10px; border-radius:12px;
+  border:2px dashed #9ad1c650; pointer-events:none; z-index:1;
 }
 
 /* Seat totals — top-centered and above cards */
@@ -100,24 +125,31 @@ main{max-width:1100px;margin:0 auto;padding:12px}
   position:absolute; top:6px; left:50%; transform:translateX(-50%); z-index:8;
   padding:2px 10px; border-radius:10px; background:#0b3344; border:1px solid #ffffff22;
 }
-/* keep cards clear of the badge */
 .seat .cards{padding-top:24px}
 
 /* Tightening when many cards */
 .seat.tight   .cards .card{transform:scale(.9)}
 .seat.tighter .cards .card{transform:scale(.82)}
 
-/* ===== Bet pill ===== */
+/* ===== Bet pill + stacks ===== */
 .bet{
   display:inline-block;background:#0b3344;border:2px dashed #ffffff33;
   padding:6px 10px;border-radius:999px;font-weight:800;margin:6px 0;cursor:pointer;
 }
-
-/* ===== Z-index safety ===== */
-#dealerArea{position:relative;z-index:1}
-#seatsArea{position:relative;z-index:2}
-.seat{position:relative;z-index:3;overflow:visible}
-.seat .cards{position:relative;z-index:4}
+.bet-stack{position:relative;height:70px;margin-top:6px;pointer-events:none}
+.chip-token{
+  width:40px;height:40px;border-radius:50%;position:absolute;left:8px;bottom:6px;
+  display:grid;place-items:center;font:900 11px/1 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+  color:#111;background:#fff;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35));
+  transform:translateY(12px) scale(.8);opacity:0;transition:transform .22s,opacity .22s;border:3px solid #3498db;
+}
+.chip-token.in{transform:translateY(0) scale(1);opacity:1}
+.chip-token.locked{filter:grayscale(.2) brightness(.95)}
+.chip-token>span{position:absolute;inset:0;display:grid;place-items:center;font-weight:900;color:#111}
+.chip-token.v5{border-color:#2ecc71}
+.chip-token.v20{border-color:#3498db}
+.chip-token.v50{border-color:#f1c40f}
+.chip-token.v100{border-color:#9b59b6}
 
 /* ===== Chip tray (big selectable chips) ===== */
 #chipsArea{
@@ -140,39 +172,44 @@ main{max-width:1100px;margin:0 auto;padding:12px}
 #chipsArea.shake{animation:hs-shake .25s linear 1}
 @keyframes hs-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 
-/* ===== Bet stacks (chips on the table) ===== */
-.bet-stack{position:relative;height:70px;margin-top:6px;pointer-events:none}
-.chip-token{
-  width:40px;height:40px;border-radius:50%;position:absolute;left:8px;bottom:6px;
-  display:grid;place-items:center;font:900 11px/1 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-  color:#111;background:#fff;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35));
-  transform:translateY(12px) scale(.8);opacity:0;transition:transform .22s,opacity .22s;border:3px solid #3498db;
-}
-.chip-token.in{transform:translateY(0) scale(1);opacity:1}
-.chip-token.locked{filter:grayscale(.2) brightness(.95)}
-.chip-token>span{position:absolute;inset:0;display:grid;place-items:center;font-weight:900;color:#111}
-.chip-token.v5{border-color:#2ecc71}
-.chip-token.v20{border-color:#3498db}
-.chip-token.v50{border-color:#f1c40f}
-.chip-token.v100{border-color:#9b59b6}
-
 /* ===== Action buttons ===== */
 #actionButtons{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
 #actionButtons button{
   padding:10px 14px;border-radius:10px;border:none;font-weight:800;
-  background:var(--accent);color:#031926;cursor:pointer
+  background:var(--accent);color:var(--ink);cursor:pointer
 }
 button.dimmed{opacity:.4;pointer-events:none}
+
+/* ===== Payout bubble (per seat) ===== */
+.seat .payout {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%) scale(.9);
+  background: rgba(0,0,0,.68);
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 900;
+  letter-spacing: .3px;
+  box-shadow: 0 10px 26px rgba(0,0,0,.35);
+  opacity: 0;
+  z-index: 12;
+  transition: opacity .25s ease, transform .25s ease;
+}
+.seat .payout.show { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+.seat .payout.win  { background:#0f5132; }
+.seat .payout.push { background:#344e62; }
+.seat .payout.lose { background:#5b1d28; }
 
 /* ===== Profile/Settings Panel ===== */
 .panel{
   position:fixed;right:-320px;top:0;width:320px;height:100%;
-  background:var(--panel);box-shadow:-2px 0 20px rgba(0,0,0,.35);
+  background:#12203b;box-shadow:-2px 0 20px rgba(0,0,0,.35);
   padding:14px;transition:right .25s;z-index:1000;
 }
 .panel.open{right:0}
 .profile-header{display:flex;align-items:center;gap:12px;padding-bottom:10px;border-bottom:1px solid #ffffff22}
-.close-btn{margin-left:auto;padding:6px 10px;border:none;border-radius:8px;background:var(--accent);color:#031926;font-weight:800;cursor:pointer}
+.close-btn{margin-left:auto;padding:6px 10px;border:none;border-radius:8px;background:var(--accent);color:var(--ink);font-weight:800;cursor:pointer}
 .settings-group{display:flex;flex-direction:column;gap:6px;padding:10px 0;border-bottom:1px solid #ffffff0f}
 
 /* ===== Insurance prompt ===== */
@@ -184,6 +221,6 @@ button.dimmed{opacity:.4;pointer-events:none}
 }
 .insurance.show{ display:flex; }
 .insurance .btn{
-  background:var(--accent); color:#031926;
+  background:var(--accent); color:var(--ink);
   border:none; border-radius:8px; padding:6px 10px; font-weight:800; cursor:pointer;
 }
