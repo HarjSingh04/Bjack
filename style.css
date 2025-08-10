@@ -140,3 +140,5 @@ body.theme-classic #dealerArea, body.theme-classic #seatsArea{ background:#2a243
 #seatsArea.duo .seat[data-seat="1"]{ display:block; top:190px; transform:translateX(-110%) rotate(-4deg); }
 #seatsArea.duo .seat[data-seat="2"]{ display:block; top:190px; transform:translateX(10%) rotate(4deg); }
 #seatsArea.trio .seat{ display:block; }
+.seat { overflow: visible; }
+.card { opacity: 1 !important; }
