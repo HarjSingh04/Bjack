@@ -1,80 +1,45 @@
 /* ==============================
    HS Blackjack — sw.js
-   Offline caching + update versioning
+   Offline caching + versioning
    ============================== */
 
-const VERSION = '2025-08-10-01';         // <-- bump this when you deploy
-const CACHE_NAME = `bjack-cache-${VERSION}`;
+const VERSION = 'all-2025-08-10';
+const CACHE = 'bjack-'+VERSION;
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './script.js',
-  './sw.js?v=' + VERSION
+  './sw.js?v='+VERSION
 ];
 
-// Install: cache core assets
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
-  );
+self.addEventListener('install', e=>{
+  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));
   self.skipWaiting();
 });
-
-// Activate: clean old caches
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((k) => k.startsWith('bjack-cache-') && k !== CACHE_NAME)
-          .map((k) => caches.delete(k))
-      )
-    )
-  );
+self.addEventListener('activate', e=>{
+  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('bjack-')&&k!==CACHE).map(k=>caches.delete(k)))));
   self.clients.claim();
 });
-
-// Fetch strategy:
-// - HTML/documents: network-first (so updates show quickly)
-// - Other assets: cache-first (fast, offline-friendly)
-self.addEventListener('fetch', (event) => {
-  const req = event.request;
-  const url = new URL(req.url);
-
-  // Only handle same-origin
-  if (url.origin !== location.origin) return;
-
-  const isHTML =
-    req.mode === 'navigate' ||
-    req.destination === 'document' ||
-    url.pathname.endsWith('/') ||
-    url.pathname.endsWith('/index.html');
-
-  if (isHTML) {
-    event.respondWith(networkFirst(req));
-  } else {
-    event.respondWith(cacheFirst(req));
-  }
+self.addEventListener('fetch', e=>{
+  const url = new URL(e.request.url);
+  if(url.origin!==location.origin) return;
+  const isHTML = e.request.mode==='navigate' || e.request.destination==='document' || url.pathname.endsWith('/') || url.pathname.endsWith('/index.html');
+  if(isHTML){ e.respondWith(networkFirst(e.request)); } else { e.respondWith(cacheFirst(e.request)); }
 });
-
-async function networkFirst(req) {
-  try {
-    const fresh = await fetch(req, { cache: 'no-store' });
-    const cache = await caches.open(CACHE_NAME);
-    cache.put(req, fresh.clone());
-    return fresh;
-  } catch {
-    const cache = await caches.open(CACHE_NAME);
-    return (await cache.match(req)) || (await cache.match('./index.html'));
+async function networkFirst(req){
+  try{
+    const fresh = await fetch(req,{cache:'no-store'});
+    const c = await caches.open(CACHE); c.put(req,fresh.clone()); return fresh;
+  }catch(e){
+    const c = await caches.open(CACHE); return (await c.match(req)) || (await c.match('./index.html'));
   }
 }
-
-async function cacheFirst(req) {
-  const cache = await caches.open(CACHE_NAME);
-  const cached = await cache.match(req);
-  if (cached) return cached;
+async function cacheFirst(req){
+  const c = await caches.open(CACHE);
+  const hit = await c.match(req);
+  if(hit) return hit;
   const fresh = await fetch(req);
-  cache.put(req, fresh.clone());
+  c.put(req,fresh.clone());
   return fresh;
 }
