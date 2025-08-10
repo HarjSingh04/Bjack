@@ -1,149 +1,118 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
   <title>Blackjack — HS Edition</title>
   <link rel="stylesheet" href="style.css" />
-  <meta name="theme-color" content="#0b132b" />
 </head>
-<body class="theme-midnight chip-classic">
-  <!-- Header / Profile Hub -->
+<body class="theme-midnight">
   <header>
-    <div id="profileBtn" class="profile-btn" title="Profile & Settings">
-      <div class="avatar" id="playerAvatar">HS</div>
+    <div id="profileBtn" class="profile-btn" title="Profile / Settings">
+      <div class="avatar">HS</div>
       <div class="profile-info">
-        <span id="playerName">Player</span>
-        <span id="playerBank">$1000</span>
+        <div id="playerName">Player</div>
+        <div id="playerBank">$1000</div>
       </div>
     </div>
   </header>
 
-  <!-- Table -->
   <main>
-    <!-- Dealer -->
+    <!-- Dealer table -->
     <section id="dealerArea">
-      <div class="avatar dealer-avatar">D</div>
+      <div class="profile-btn" style="position:absolute;left:10px;top:10px;pointer-events:none">
+        <div class="avatar dealer-avatar">D</div>
+      </div>
       <div id="dealerCards" class="cards"></div>
       <div id="dealerTotal" class="total"></div>
     </section>
 
-    <!-- Player Seats (curved table) -->
+    <!-- Seats (arc layout) -->
     <section id="seatsArea" class="arc solo">
       <!-- Seat 1 -->
-      <div class="seat" data-seat="1">
-        <div class="avatar seat-avatar">HS</div>
-        <div class="bet" id="bet1" title="Tap to remove last chip">$0</div>
-        <div class="bet-stack" id="stack1"></div>
-        <div class="cards" id="hand1"></div>
-        <div class="total" id="total1"></div>
+      <div class="seat active" data-seat="1">
+        <div class="seat-avatar">HS</div>
+        <div class="bet">$0</div>
+        <div class="bet-stack"></div>
+        <div id="hand1" class="cards"></div>
+        <div id="total1" class="total"></div>
       </div>
+
       <!-- Seat 2 -->
       <div class="seat" data-seat="2">
-        <div class="avatar seat-avatar">HS</div>
-        <div class="bet" id="bet2" title="Tap to remove last chip">$0</div>
-        <div class="bet-stack" id="stack2"></div>
-        <div class="cards" id="hand2"></div>
-        <div class="total" id="total2"></div>
+        <div class="seat-avatar">HS</div>
+        <div class="bet">$0</div>
+        <div class="bet-stack"></div>
+        <div id="hand2" class="cards"></div>
+        <div id="total2" class="total"></div>
       </div>
+
       <!-- Seat 3 -->
       <div class="seat" data-seat="3">
-        <div class="avatar seat-avatar">HS</div>
-        <div class="bet" id="bet3" title="Tap to remove last chip">$0</div>
-        <div class="bet-stack" id="stack3"></div>
-        <div class="cards" id="hand3"></div>
-        <div class="total" id="total3"></div>
+        <div class="seat-avatar">HS</div>
+        <div class="bet">$0</div>
+        <div class="bet-stack"></div>
+        <div id="hand3" class="cards"></div>
+        <div id="total3" class="total"></div>
       </div>
     </section>
 
-    <!-- Seat count toggle -->
-    <div id="seatToggle">
-      <button data-seats="1" class="active">1 Seat</button>
+    <!-- Seat count -->
+    <div id="seatToggle" style="display:flex;gap:6px;justify-content:center">
+      <button class="active" data-seats="1">1 Seat</button>
       <button data-seats="2">2 Seats</button>
       <button data-seats="3">3 Seats</button>
     </div>
 
-    <!-- Chip tray (image-style chips) -->
-    <div id="chipsArea">
+    <!-- Chip tray -->
+    <section id="chipsArea">
       <button class="chip-img chip-5"   data-value="5"><span>$5</span></button>
       <button class="chip-img chip-20"  data-value="20"><span>$20</span></button>
       <button class="chip-img chip-50"  data-value="50"><span>$50</span></button>
       <button class="chip-img chip-100" data-value="100"><span>$100</span></button>
-    </div>
+    </section>
 
-    <!-- Actions -->
+    <!-- Action buttons -->
     <div id="actionButtons">
-      <button id="dealBtn" class="always">Deal</button>
-      <button id="hitBtn"  disabled>Hit</button>
-      <button id="standBtn" disabled>Stand</button>
-      <button id="doubleBtn" disabled>Double</button>
-      <button id="splitBtn"  disabled>Split</button>
+      <button id="dealBtn">Deal</button>
+      <button id="hitBtn" class="dimmed" disabled>Hit</button>
+      <button id="standBtn" class="dimmed" disabled>Stand</button>
+      <button id="doubleBtn" class="dimmed" disabled>Double</button>
+      <button id="splitBtn" class="dimmed" disabled>Split</button>
     </div>
   </main>
 
-  <!-- Profile/Settings Panel -->
-  <div id="profilePanel" class="panel">
+  <!-- Slide-in profile/settings -->
+  <aside id="profilePanel" class="panel" aria-hidden="true">
     <div class="profile-header">
-      <div class="avatar large" id="profileAvatar">HS</div>
-      <input type="text" id="nameInput" placeholder="Your name" />
+      <div class="avatar">HS</div>
+      <div class="profile-info">
+        <div id="profileName">Player</div>
+        <div id="profileBank">$1000</div>
+      </div>
       <button id="closeProfile" class="close-btn">Close</button>
     </div>
 
     <div class="settings-group">
-      <label>Table Theme</label>
-      <select id="themeSelect">
-        <option value="midnight" selected>Midnight</option>
-        <option value="green">Green</option>
-        <option value="classic">Classic</option>
-      </select>
+      <label for="decksInput" style="opacity:.85">Decks</label>
+      <input id="decksInput" type="number" min="1" max="8" value="6" />
     </div>
 
     <div class="settings-group">
-      <label>Chip Theme</label>
-      <select id="chipTheme">
-        <option value="classic" selected>Classic</option>
-        <option value="neon">Neon</option>
-        <option value="mono">Monochrome</option>
-      </select>
-    </div>
-
-    <div class="settings-group">
-      <label>Sound</label>
-      <input type="checkbox" id="soundToggle" checked />
-    </div>
-
-    <div class="settings-group">
-      <label>Rules</label>
-      <select id="ruleSet">
-        <option value="crown" selected>Crown (S17, ENHC)</option>
-        <option value="vegas">Vegas (hole card + Insurance)</option>
-      </select>
-    </div>
-
-    <div class="settings-group">
-      <label>Decks</label>
-      <input type="number" id="deckCount" min="1" max="8" value="6" />
-    </div>
-
-    <div class="settings-group">
-      <button id="resetStats">Reset Stats</button>
       <button id="resetBank">Reset Bank</button>
+      <button id="resetStats">Reset Stats</button>
     </div>
-  </div>
+  </aside>
 
-  <!-- Insurance prompt (Vegas mode) -->
-  <div id="insuranceBar" class="insurance hidden">
+  <!-- Insurance prompt (hidden until dealer shows Ace) -->
+  <div id="insuranceBar" class="insurance" role="dialog" aria-live="polite">
     <span>Dealer shows Ace. Take Insurance?</span>
-    <button id="insYes">Yes</button>
-    <button id="insNo">No</button>
+    <button id="insYes" class="btn">Yes</button>
+    <button id="insNo"  class="btn">No</button>
   </div>
 
-  <!-- Build badge -->
-  <div id="buildBadge" style="
-    position:fixed;right:10px;bottom:10px;background:#14213d;color:#fff;
-    padding:6px 10px;border-radius:8px;font:600 12px/1.2 system-ui;opacity:.9;z-index:9999">
-    loading…
-  </div>
+  <!-- Build tag -->
+  <div id="buildBadge" style="position:fixed;right:12px;bottom:12px;opacity:.6;font-size:12px;"></div>
 
   <script src="script.js"></script>
 </body>
