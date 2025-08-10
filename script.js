@@ -1,8 +1,8 @@
-/* HS Blackjack — stable live build + insurance + 5+ cards */
-var BUILD = 'stable-2025-08-10-ii';
+/* HS Blackjack — ENHC slow deal + Rebet + fade-out */
+var BUILD = 'stable-2025-08-10-iii';
 var DEBUG_FORCE = false; // live
 
-// cache-buster utility (?fresh=1)
+// cache-buster (?fresh=1)
 (function freshLoader(){
   try{
     const q = new URLSearchParams(location.search);
@@ -14,7 +14,7 @@ var DEBUG_FORCE = false; // live
         caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
       }
       q.delete('fresh');
-      setTimeout(() => location.replace(location.pathname + (q.toString()?('?'+q):'')), 50);
+      setTimeout(() => location.replace(location.pathname + (q.toString()?('?'+q):'')), 40);
     }
   }catch(e){}
 })();
@@ -23,6 +23,7 @@ var DEBUG_FORCE = false; // live
 const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const byId = id => document.getElementById(id);
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 /* ------------ state ------------ */
 let playerBank = 1000;
@@ -37,8 +38,12 @@ let finished = [false,false,false];
 let activeSeat = 0;
 let inRound = false;
 
+// Insurance
 let insuranceWager = 0;
-let allowInsurance = true; // Crown-style (offer on dealer Ace)
+let allowInsurance = true; // per your preference
+
+// Rebet
+let lastStagedBets = [0,0,0];
 
 const SUITS = ['♠','♥','♦','♣'];
 const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
@@ -51,7 +56,7 @@ const totalContainer = i => byId('total'+(i+1));
 /* ------------ boot ------------ */
 let seats = [];
 document.addEventListener('DOMContentLoaded', () => {
-  byId('buildBadge')?.insertAdjacentText('beforeend', `HS Blackjack • ${BUILD}`);
+  const badge = byId('buildBadge'); if (badge) badge.textContent = `HS Blackjack • ${BUILD}`;
 
   cacheDom();
   ensureSeat1Active();
@@ -62,8 +67,10 @@ document.addEventListener('DOMContentLoaded', () => {
   initSeatToggle();
   initProfilePanel();
   initInsuranceHandlers();
+  updateRebetButton();
 });
 
+/* ------------ DOM wiring ------------ */
 function cacheDom(){
   seats = $$('.seat').map(seat => ({
     root: seat,
@@ -94,7 +101,7 @@ function applySeatLayout(){
   }
 }
 
-/* ------------ chip tray + stacks ------------ */
+/* ------------ chips + stacks ------------ */
 function initChips(){
   $$('#chipsArea .chip-img').forEach(chip => {
     chip.addEventListener('click', () => {
@@ -104,8 +111,9 @@ function initChips(){
       if (idx<0) idx=0;
       if (idx>=activeSeatsCount) return;
       stagedBets[idx]+=val;
-      if (seats[idx].bet) seats[idx].bet.textContent = '$'+stagedBets[idx];
+      seats[idx].bet && (seats[idx].bet.textContent = '$'+stagedBets[idx]);
       addChipToken(idx,val);
+      updateRebetButtonPreview();
     });
   });
 
@@ -123,10 +131,12 @@ function initChips(){
       if (removed>0){
         stagedBets[idx] = Math.max(0, stagedBets[idx]-removed);
         s.bet.textContent = '$'+stagedBets[idx];
+        updateRebetButtonPreview();
       }
     });
   });
 }
+
 function addChipToken(i, value){
   const stack = seats[i]?.stack; if (!stack) return;
   const t = document.createElement('div');
@@ -164,15 +174,28 @@ function clearStacksAndBets(){
 /* ------------ actions ------------ */
 function initActions(){
   byId('dealBtn')?.addEventListener('click', startRound);
+  byId('rebetBtn')?.addEventListener('click', doRebet);
   byId('hitBtn')?.addEventListener('click', doHit);
   byId('standBtn')?.addEventListener('click', doStand);
   byId('doubleBtn')?.addEventListener('click', doDouble);
-  byId('splitBtn')?.addEventListener('click', ()=>{}); // coming later
+  byId('splitBtn')?.addEventListener('click', ()=>{}); // later
 }
 function setBtn(sel,on){ const b=$(sel); if(!b) return; b.disabled=!on; b.classList.toggle('dimmed', !on); }
 function setButtons(h,s,d,sp){ setBtn('#hitBtn',h); setBtn('#standBtn',s); setBtn('#doubleBtn',d); setBtn('#splitBtn',sp); }
+function updateRebetButton(){
+  const btn = byId('rebetBtn'); if(!btn) return;
+  const need = (lastStagedBets[0]||0) + (lastStagedBets[1]||0) + (lastStagedBets[2]||0);
+  const enough = playerBank >= need && need>0 && !inRound;
+  btn.disabled = !enough; btn.classList.toggle('dimmed', !enough);
+}
+function updateRebetButtonPreview(){ // enable if there is a staged bet right now (lets player know they can repeat next time)
+  const btn = byId('rebetBtn'); if(!btn) return;
+  const need = (stagedBets[0]||0) + (stagedBets[1]||0) + (stagedBets[2]||0);
+  btn.disabled = need===0 || inRound;
+  btn.classList.toggle('dimmed', btn.disabled);
+}
 
-/* ------------ shoe + rules helpers ------------ */
+/* ------------ shoe + rules ------------ */
 function newShoe(n){
   const s=[];
   for(let i=0;i<n;i++) for(const su of SUITS) for(const r of RANKS) s.push({rank:r,suit:su,hidden:false});
@@ -190,7 +213,7 @@ function total(cards){
   while(t>21 && a>0){ t-=10; a--; }
   return t||'';
 }
-function isBJ(cards){ return cards.length===2 && total(cards)===21; }
+function isBJ(cards){ return cards.length>=2 && total(cards)===21 && cards.filter(c=>!c.hidden).length===2; }
 function isSoft(cards){
   let t=0,a=0;
   for(const c of cards){ if(c.hidden) continue; t+=val(c.rank); if(c.rank==='A') a++; }
@@ -204,21 +227,20 @@ function canDouble(i){
 }
 
 /* ------------ bank ui ------------ */
-function renderBank(){
-  byId('playerBank').textContent = '$'+playerBank;
-}
+function renderBank(){ byId('playerBank').textContent = '$'+playerBank; }
 
 /* ------------ render ------------ */
-function putCard(container, card){
+function putCard(container, card, slow=false){
   if(!container) return;
   const c = document.createElement('div');
+  const red = (card.suit==='♥'||card.suit==='♦')?' red':'';
   if(card.hidden){ c.className='card back'; c.textContent='🂠'; }
-  else{
-    const red = (card.suit==='♥'||card.suit==='♦')?' red':'';
-    c.className = 'card'+red;
-    c.innerHTML = `<span class="small">${card.rank}</span><span class="big">${card.rank}</span><span class="suit">${card.suit}</span>`;
-  }
+  else{ c.className='card'+red; c.innerHTML = `<span class="small">${card.rank}</span><span class="big">${card.rank}</span><span class="suit">${card.suit}</span>`; }
+  if (slow){ c.classList.add('deal-slow'); }
   container.appendChild(c);
+  if (slow){
+    requestAnimationFrame(()=> c.classList.add('show'));
+  }
 }
 function renderAll(){
   // dealer
@@ -230,7 +252,6 @@ function renderAll(){
     const con = handContainer(s); if(con){ con.innerHTML=''; for(const cd of hands[s]) putCard(con, cd); }
     const tcon = totalContainer(s); if(tcon) tcon.textContent = total(hands[s]);
 
-    // tighten scaling for many cards
     const root = seats[s]?.root;
     if(root){
       root.classList.remove('tight','tighter');
@@ -239,14 +260,6 @@ function renderAll(){
       if (n>=7) root.classList.add('tighter');
     }
   }
-}
-function updateButtonsForState(){
-  if(!inRound){ setButtons(false,false,false,false); return; }
-  const t = Number(total(hands[activeSeat]));
-  const h = t<21;
-  const st = true;
-  const d = canDouble(activeSeat);
-  setButtons(h,st,d,false);
 }
 
 /* ------------ insurance bar ------------ */
@@ -271,98 +284,140 @@ function hideInsuranceBar(){
   insuranceWager = 0;
 }
 
-/* ------------ round flow ------------ */
-function startRound(){
-  // require at least one bet
+/* ------------ round flow (ENHC) ------------ */
+async function startRound(){
+  // must have a bet
   let any=false; for(let i=0;i<activeSeatsCount;i++) if(stagedBets[i]>0) any=true;
   if(!any) return;
 
-  inRound=true;
-  dealer=[]; hands=[[],[],[]]; handBets=[0,0,0]; doubled=[false,false,false]; finished=[false,false,false];
-  activeSeat=0;
+  inRound=true; setButtons(false,false,false,false); updateRebetButton();
 
+  // copy staged bets to lastStagedBets for Rebet
+  lastStagedBets = stagedBets.slice();
+
+  // reset state
+  dealer=[]; hands=[[],[],[]]; handBets=[0,0,0]; doubled=[false,false,false]; finished=[false,false,false]; activeSeat=0;
+  // take bets
   for(let s=0;s<activeSeatsCount;s++){ handBets[s]=stagedBets[s]; playerBank -= handBets[s]; }
   renderBank(); lockStacks();
 
-  // clear visuals
+  // clear visuals & remove any previous fade class
+  byId('dealerArea')?.classList.remove('fade-out');
+  $$('#seatsArea .seat').forEach(seat=> seat.classList.remove('fade-out'));
+
   byId('dealerCards')?.replaceChildren(); if(byId('dealerTotal')) byId('dealerTotal').textContent='';
   for(let i=0;i<activeSeatsCount;i++){ handContainer(i)?.replaceChildren(); if(totalContainer(i)) totalContainer(i).textContent=''; }
 
   if (DEBUG_FORCE){
     hands[0].push({rank:'A',suit:'♠',hidden:false}); hands[0].push({rank:'K',suit:'♥',hidden:false});
-    dealer.push({rank:'3',suit:'♣',hidden:false});   dealer.push({rank:'Q',suit:'♦',hidden:true});
-    renderAll(); updateButtonsForState(); settleImmediateBlackjacks(); return;
+    dealer.push({rank:'3',suit:'♣',hidden:false});
+    // ENHC: NO dealer hole now
+    // slow render
+    await slowDealRender();
+    // Natural BJ auto-pay
+    if (isBJ(hands[0])) { playerBank += Math.floor(handBets[0]*2.5); renderBank(); await endRoundFadeAndReset(); return; }
+    setButtons(true,true,canDouble(0),false); updateRebetButton(); return;
   }
 
-  // initial deal: players 1 card, dealer up; players 2nd card, dealer hole
-  for(let r=0;r<2;r++){
-    for(let i=0;i<activeSeatsCount;i++){ const c=draw(); c.hidden=false; hands[i].push(c); }
-    const cd = draw(); cd.hidden = (r===1); dealer.push(cd);
+  // === ENHC slow sequence ===
+  // Pass 1: each player gets first card, then dealer gets one upcard
+  for (let i=0;i<activeSeatsCount;i++){ const c=draw(); c.hidden=false; hands[i].push(c); await slowDealRender(); }
+  const du = draw(); du.hidden=false; dealer.push(du); await slowDealRender();
+
+  // Pass 2: each player gets second card (dealer gets NO hole card here)
+  for (let i=0;i<activeSeatsCount;i++){ const c=draw(); c.hidden=false; hands[i].push(c); await slowDealRender(); }
+
+  // Insurance decision (offer only if dealer upcard Ace and player doesn't have BJ)
+  if (dealer[0] && dealer[0].rank==='A' && !isBJ(hands[0])) showInsuranceBar(); else hideInsuranceBar();
+
+  // Natural blackjack auto-pay (player)
+  if (isBJ(hands[0])) {
+    playerBank += Math.floor(handBets[0]*2.5);
+    renderBank();
+    await endRoundFadeAndReset();
+    return;
   }
 
-  // render on next tick (avoids race where DOM was just cleared)
-  setTimeout(()=>{
-    renderAll();
-
-    // Insurance: offer only if dealer upcard is Ace and player doesn't have BJ
-    if (dealer[0] && dealer[0].rank==='A' && !isBJ(hands[0])) showInsuranceBar(); else hideInsuranceBar();
-
-    // Natural blackjack: auto-pay 3:2
-    if (isBJ(hands[0])) {
-      playerBank += Math.floor(handBets[0]*2.5);
-      renderBank(); inRound=false; clearStacksAndBets(); setButtons(false,false,false,false); hideInsuranceBar();
-      return;
-    }
-
-    updateButtonsForState();
-  },0);
+  // enable player actions
+  setButtons(true,true,canDouble(0),false);
+  updateRebetButton();
 }
 
-function doHit(){
+async function slowDealRender(){
+  // incremental render (only append last card for each hand/dealer with animation)
+  const dcon = byId('dealerCards');
+  if (dcon){ dcon.innerHTML=''; for(const cd of dealer) putCard(dcon, cd, true); }
+  if (byId('dealerTotal')) byId('dealerTotal').textContent = total(dealer);
+
+  for (let s=0;s<activeSeatsCount;s++){
+    const con = handContainer(s); if(!con) continue;
+    con.innerHTML='';
+    for (const cd of hands[s]) putCard(con, cd, true);
+    const tcon = totalContainer(s); if (tcon) tcon.textContent = total(hands[s]);
+
+    const root = seats[s]?.root;
+    if(root){
+      root.classList.remove('tight','tighter');
+      const n = hands[s].length;
+      if (n>=5 && n<=6) root.classList.add('tight');
+      if (n>=7) root.classList.add('tighter');
+    }
+  }
+  await sleep(300); // pacing between each append
+}
+
+/* Player actions */
+async function doHit(){
   if(!inRound) return;
   const h = hands[activeSeat];
   if (Number(total(h))>=21) return;
   const c=draw(); c.hidden=false; h.push(c);
-  renderAll();
+  await slowDealRender();
   const t=Number(total(h));
-  if (t>=21) doStand(); else updateButtonsForState();
+  if (t>=21) { await doStand(); } else { setButtons(true,true,canDouble(activeSeat),false); }
 }
 
-function doDouble(){
+async function doDouble(){
   if(!inRound) return;
   if(!canDouble(activeSeat)) return;
   if(playerBank < handBets[activeSeat]) return;
   playerBank -= handBets[activeSeat]; renderBank();
   doubled[activeSeat]=true;
   const c=draw(); c.hidden=false; hands[activeSeat].push(c);
-  renderAll();
-  doStand();
+  await slowDealRender();
+  await doStand();
 }
 
-function doStand(){
+async function doStand(){
   if(!inRound) return;
   finished[activeSeat]=true;
-  dealerPlayAndSettle();
+  // Single-seat flow now goes straight to dealer play
+  await dealerPlayAndSettle_ENHC();
 }
 
-function dealerPlayAndSettle(){
-  // reveal hole
-  dealer.forEach(c=>c.hidden=false);
-  // S17 (dealer stands on all 17)
+async function dealerPlayAndSettle_ENHC(){
+  hideInsuranceBar();
+
+  // ENHC: only now dealer draws "hole" (second) card, then plays out to S17
+  if (dealer.length===1){
+    const hole = draw(); hole.hidden=false; dealer.push(hole);
+    await slowDealRender();
+  }
+
+  // S17
   while(true){
     const t = Number(total(dealer));
-    if (t<17) { const c=draw(); c.hidden=false; dealer.push(c); }
+    if (t<17) { const c=draw(); c.hidden=false; dealer.push(c); await slowDealRender(); }
     else break;
   }
-  renderAll();
 
-  // Resolve insurance first (2:1 if dealer has BJ)
+  // Resolve insurance (2:1 if dealer has BJ — rare in ENHC since hole just drawn; still honoring your request)
   if (insuranceWager>0){
-    if (isBJ(dealer)) playerBank += insuranceWager*3; // return + 2:1 profit
-    insuranceWager=0; hideInsuranceBar(); renderBank();
+    if (isBJ(dealer)) playerBank += insuranceWager*3; // stake back + 2:1
+    insuranceWager=0; renderBank();
   }
 
-  // Settle seat 1 (we’ll extend to 2–3 next)
+  // settle seat 1 (we’ll extend to 2–3 later)
   const bet=handBets[0], dbl=doubled[0], p=Number(total(hands[0])), d=Number(total(dealer));
   if (p>21){ /* lose */ }
   else if (d>21){ playerBank += bet*(dbl?4:2); }
@@ -371,16 +426,50 @@ function dealerPlayAndSettle(){
   // else lose
 
   renderBank();
-  inRound=false; clearStacksAndBets(); setButtons(false,false,false,false);
+  await endRoundFadeAndReset();
 }
 
-/* immediate blackjack payout helper (used in debug path) */
-function settleImmediateBlackjacks(){
-  let any=false;
-  for(let i=0;i<activeSeatsCount;i++){
-    if (isBJ(hands[i])){ playerBank += Math.floor(handBets[i]*2.5); finished[i]=true; any=true; }
+/* ------------ Round end fade + reset ------------ */
+async function endRoundFadeAndReset(){
+  // fade all cards
+  byId('dealerArea')?.classList.add('fade-out');
+  $$('#seatsArea .seat').forEach(seat=> seat.classList.add('fade-out'));
+  await sleep(380);
+
+  // clear visuals & state
+  byId('dealerCards')?.replaceChildren(); if(byId('dealerTotal')) byId('dealerTotal').textContent='';
+  for(let i=0;i<3;i++){ handContainer(i)?.replaceChildren(); if(totalContainer(i)) totalContainer(i).textContent=''; }
+  clearStacksAndBets();
+  hideInsuranceBar();
+
+  inRound=false;
+  setButtons(false,false,false,false);
+  updateRebetButton(); // now lastStagedBets is available
+}
+
+/* ------------ Rebet ------------ */
+function doRebet(){
+  if (inRound) return;
+  // clear any currently staged chips first
+  clearStacksAndBets();
+
+  // apply last staged bets if affordable
+  let needed = (lastStagedBets[0]||0) + (lastStagedBets[1]||0) + (lastStagedBets[2]||0);
+  if (needed<=0 || playerBank < needed){ updateRebetButton(); return; }
+
+  // Stage onto visible seats only; build stack tokens visually
+  for (let i=0;i<activeSeatsCount;i++){
+    const amt = lastStagedBets[i]||0;
+    if (amt<=0) continue;
+    stagedBets[i] = amt;
+    seats[i].bet && (seats[i].bet.textContent = '$'+amt);
+
+    // build tokens from denominations (100/50/20/5 greedy)
+    let r = amt;
+    const pushMany = (v) => { while(r>=v){ addChipToken(i, v); r-=v; } };
+    pushMany(100); pushMany(50); pushMany(20); pushMany(5);
   }
-  if (any){ renderBank(); inRound=false; clearStacksAndBets(); setButtons(false,false,false,false); hideInsuranceBar(); }
+  updateRebetButtonPreview();
 }
 
 /* ------------ seat toggle ------------ */
@@ -404,7 +493,8 @@ function initProfilePanel(){
   closeBtn  ?.addEventListener('click', ()=> panel?.classList.remove('open'));
 
   byId('decksInput')?.addEventListener('change', (e)=>{
-    const v = parseInt(e.target.value,10); if (v>=1 && v<=8) decks=v;
+    const v = parseInt(e.target.value,10);
+    if (v>=1 && v<=8) decks=v;
   });
 
   byId('resetBank')?.addEventListener('click', ()=>{
@@ -412,6 +502,7 @@ function initProfilePanel(){
     inRound=false; dealer=[]; hands=[[],[],[]];
     byId('dealerCards')?.replaceChildren(); if(byId('dealerTotal')) byId('dealerTotal').textContent='';
     for (let i=0;i<3;i++){ handContainer(i)?.replaceChildren(); if(totalContainer(i)) totalContainer(i).textContent=''; }
+    updateRebetButton();
   });
 
   byId('resetStats')?.addEventListener('click', ()=>{
