@@ -206,3 +206,54 @@ button.dimmed{opacity:.4;pointer-events:none}
   background:var(--accent); color:var(--ink);
   border:none; border-radius:8px; padding:6px 10px; font-weight:800; cursor:pointer;
 }
+/* ==== Mobile overrides (<= 600px) ==== */
+@media (max-width: 600px){
+
+  /* Make panels taller so background + dealer card fit */
+  #dealerArea{ aspect-ratio: 16 / 6; }   /* was 16/4 */
+  #seatsArea { aspect-ratio: 16 / 10; }  /* was 16/7 */
+
+  /* Drop dealer cards below the stencil text and scale slightly */
+  #dealerCards{
+    top: 82%;
+    transform: translate(-50%,-50%) scale(.92);
+  }
+  #dealerTotal{ top: 94%; }
+
+  /* Stack seats vertically on mobile (no arc transforms) */
+  #seatsArea.arc .seat{
+    position: static;
+    width: 100%;
+    min-width: 0;
+    transform: none;
+    margin: 10px 0 14px;
+  }
+  /* Solo rule neutralized because we stack anyway */
+  #seatsArea.solo .seat[data-seat="1"]{
+    top: auto; left: auto; transform: none;
+  }
+
+  /* Keep player cards INSIDE the dotted rectangle */
+  .seat::after{ inset: 10px; } /* dashed box padding */
+  .seat .cards{
+    position: relative;        /* not absolute on mobile */
+    inset: auto;               /* ignore desktop insets */
+    padding: 8px 8px 12px;     /* space from dashed edges */
+    min-height: 120px;
+    justify-content: center;
+  }
+  .seat .total{
+    position: absolute;
+    top: 6px; left: 50%;
+    transform: translateX(-50%);
+  }
+
+  /* Slightly smaller cards & chips so everything fits */
+  .card{ width: 54px; height: 80px; }
+  .card .big{ font-size: 19px; }
+  .chip-img{ width: 60px; height: 60px; }
+
+  /* Keep bubbles readable but not huge */
+  .seat .payout{ transform: translate(-50%,-50%) scale(.85); }
+  .seat .payout.show{ transform: translate(-50%,-50%) scale(1); }
+}
