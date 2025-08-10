@@ -1,4 +1,4 @@
-/* HS Blackjack — full layout + chips + insurance (stable) */
+/* HS Blackjack — full layout + chips + insurance (stable, Aug-10) */
 
 /* ===== Reset / Base ===== */
 *{box-sizing:border-box}
@@ -39,7 +39,6 @@ main{max-width:1100px;margin:0 auto;padding:12px}
   position:relative; z-index:5; display:flex; flex-wrap:wrap; justify-content:center;
   gap:8px; align-items:center; min-height:120px;
 }
-.total{font-weight:800;opacity:.95;margin-top:4px}
 .card{
   width:64px;height:94px;border-radius:8px;position:relative;
   background:linear-gradient(145deg,#fff,#f1f1f1); color:#111;
@@ -52,16 +51,12 @@ main{max-width:1100px;margin:0 auto;padding:12px}
 .card.red{color:#c1121f}
 .card.back{background:repeating-linear-gradient(45deg,#19376d,#19376d 8px,#0b2447 8px,#0b2447 16px);color:#fff}
 
-/* Seat total badge pinned bottom-left */
-.seat .total{
-  position:absolute; left:12px; bottom:10px;
-  padding:2px 8px; border-radius:10px;
-  background:#0b3344; border:1px solid #ffffff22;
-}
+/* Slow-deal animation helpers (JS toggles .deal-slow/.show) */
+.card.deal-slow{opacity:0;transform:translateY(-20px) scale(.96);transition:transform .28s ease,opacity .28s ease}
+.card.deal-slow.show{opacity:1;transform:translateY(0) scale(1)}
 
-/* Tightening when many cards */
-.seat.tight .cards .card{transform:scale(.92)}
-.seat.tighter .cards .card{transform:scale(.85)}
+/* Round-end fade */
+.fade-out .card{transition:transform .35s ease,opacity .35s ease;transform:translateY(30px) scale(.92);opacity:0}
 
 /* ===== Seats (arc layout) ===== */
 #seatsArea.arc{position:relative;height:460px;display:block}
@@ -96,8 +91,21 @@ main{max-width:1100px;margin:0 auto;padding:12px}
 .seat .seat-avatar{
   position:absolute; top:-14px; left:-14px; width:36px; height:36px; border-radius:50%;
   display:grid; place-items:center; font-weight:900; background:#3ddc97; color:#032b2b;
-  box-shadow:0 2px 8px rgba(0,0,0,.35); z-index:5;
+  box-shadow:0 2px 8px rgba(0,0,0,.35); z-index:6;
 }
+
+/* Seat totals — top-centered and above cards */
+.seat{position:relative}
+.seat .total{
+  position:absolute; top:6px; left:50%; transform:translateX(-50%); z-index:8;
+  padding:2px 10px; border-radius:10px; background:#0b3344; border:1px solid #ffffff22;
+}
+/* keep cards clear of the badge */
+.seat .cards{padding-top:24px}
+
+/* Tightening when many cards */
+.seat.tight   .cards .card{transform:scale(.9)}
+.seat.tighter .cards .card{transform:scale(.82)}
 
 /* ===== Bet pill ===== */
 .bet{
@@ -127,6 +135,10 @@ main{max-width:1100px;margin:0 auto;padding:12px}
 .chip-img.chip-20{border-color:#3498db}
 .chip-img.chip-50{border-color:#f1c40f}
 .chip-img.chip-100{border-color:#9b59b6}
+
+/* Over-bet shake hint */
+#chipsArea.shake{animation:hs-shake .25s linear 1}
+@keyframes hs-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 
 /* ===== Bet stacks (chips on the table) ===== */
 .bet-stack{position:relative;height:70px;margin-top:6px;pointer-events:none}
@@ -175,30 +187,3 @@ button.dimmed{opacity:.4;pointer-events:none}
   background:var(--accent); color:#031926;
   border:none; border-radius:8px; padding:6px 10px; font-weight:800; cursor:pointer;
 }
-/* ========== Round-end fade (discard animation) ========== */
-.fade-out .card {
-  transition: transform .35s ease, opacity .35s ease;
-  transform: translateY(30px) scale(.92);
-  opacity: 0;
-}
-
-/* Slightly slower visible dealing without JS transforms (just a safety baseline) */
-.card.deal-slow {
-  opacity: 0;
-  transform: translateY(-20px) scale(.96);
-  transition: transform .28s ease, opacity .28s ease;
-}
-.card.deal-slow.show {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-}
-
-/* Center totals a bit more on the seats (you asked for centered feel) */
-.seat .total {
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-/* When many cards, keep the fan centered and tighten a touch more */
-.seat.tight .cards .card   { transform: scale(.9); }
-.seat.tighter .cards .card { transform: scale(.82); }
