@@ -1,6 +1,6 @@
 /* HS Blackjack — simple, stable build with instant blackjack payout */
 var BUILD = 'easy-2025-08-10';
-var DEBUG_FORCE = true; // keep true for now so you can verify visuals
+var DEBUG_FORCE = false; // keep true for now so you can verify visuals
 
 (function freshLoader(){
   try{
