@@ -1,5 +1,5 @@
-/* HS Blackjack — ENHC slow deal + Rebet + fade-out + bank guard */
-var BUILD = 'stable-2025-08-10-iv';
+/* HS Blackjack — Multi-seat flow + ENHC slow deal + Rebet + fade-out + bank guard */
+var BUILD = 'stable-2025-08-10-multiseat';
 var DEBUG_FORCE = false; // live
 
 // cache-buster (?fresh=1)
@@ -38,16 +38,16 @@ let activeSeatsCount = 1;
 let stagedBets = [0,0,0];
 
 let dealer = [];
-let hands  = [[],[],[]];
+let hands  = [[],[],[]];          // per-seat hands
 let handBets = [0,0,0];
 let doubled  = [false,false,false];
 let finished = [false,false,false];
 let activeSeat = 0;
 let inRound = false;
 
-// Insurance
+// Insurance (temporarily only supported for 1 seat to avoid confusion)
 let insuranceWager = 0;
-let allowInsurance = true; // per your preference
+let allowInsurance = true;
 
 // Rebet
 let lastStagedBets = [0,0,0];
@@ -121,7 +121,6 @@ function initChips(){
       if (idx<0) idx=0;
       if (idx>=activeSeatsCount) return;
 
-      // NEW: total staged + this chip must not exceed bank
       if (stagedSum() + val > playerBank) {
         const tray = byId('chipsArea');
         tray?.classList.add('shake');
@@ -197,7 +196,7 @@ function initActions(){
   byId('hitBtn')?.addEventListener('click', doHit);
   byId('standBtn')?.addEventListener('click', doStand);
   byId('doubleBtn')?.addEventListener('click', doDouble);
-  byId('splitBtn')?.addEventListener('click', ()=>{}); // will add later
+  byId('splitBtn')?.addEventListener('click', ()=>{}); // split comes next
 }
 function setBtn(sel,on){ const b=$(sel); if(!b) return; b.disabled=!on; b.classList.toggle('dimmed', !on); }
 function setButtons(h,s,d,sp){ setBtn('#hitBtn',h); setBtn('#standBtn',s); setBtn('#doubleBtn',d); setBtn('#splitBtn',sp); }
@@ -232,7 +231,10 @@ function total(cards){
   while(t>21 && a>0){ t-=10; a--; }
   return t||'';
 }
-function isBJ(cards){ return cards.length>=2 && total(cards)===21 && cards.filter(c=>!c.hidden).length===2; }
+function isBJ(cards){
+  const open = cards.filter(c=>!c.hidden);
+  return open.length===2 && total(cards)===21;
+}
 function isSoft(cards){
   let t=0,a=0;
   for(const c of cards){ if(c.hidden) continue; t+=val(c.rank); if(c.rank==='A') a++; }
@@ -279,11 +281,31 @@ function renderAll(){
       if (n>=7) root.classList.add('tighter');
     }
   }
+
+  // highlight active seat
+  seats.forEach((s,idx)=>{
+    if(!s) return;
+    s.root.classList.toggle('active', idx===activeSeat && inRound);
+  });
+
+  // buttons for current seat
+  updateButtonsForState();
+}
+function updateButtonsForState(){
+  if(!inRound){ setButtons(false,false,false,false); return; }
+  if(finished[activeSeat]){ setButtons(false,false,false,false); return; }
+  const t = Number(total(hands[activeSeat]));
+  const canH = t<21;
+  const canS = true;
+  const canD = canDouble(activeSeat);
+  setButtons(canH,canS,canD,false);
 }
 
 /* ------------ insurance bar ------------ */
 function initInsuranceHandlers(){
   byId('insYes')?.addEventListener('click', ()=>{
+    // Only support single-seat insurance for now
+    if (activeSeatsCount!==1) { hideInsuranceBar(); return; }
     const half = Math.floor(handBets[0]/2);
     if (playerBank >= half) {
       insuranceWager = half;
@@ -296,11 +318,22 @@ function initInsuranceHandlers(){
 }
 function showInsuranceBar(){
   if (!allowInsurance) return;
+  if (activeSeatsCount!==1) return; // disable for multi-seat for now
   byId('insuranceBar')?.classList.add('show');
 }
 function hideInsuranceBar(){
   byId('insuranceBar')?.classList.remove('show');
   insuranceWager = 0;
+}
+
+/* ------------ seat turn helpers ------------ */
+function advanceSeatOrDealer(){
+  // move to next unfinished seat
+  for (let i=activeSeat+1; i<activeSeatsCount; i++){
+    if (!finished[i]) { activeSeat = i; renderAll(); return; }
+  }
+  // none left -> dealer plays and settles all seats
+  dealerPlayAndSettleAll();
 }
 
 /* ------------ round flow (ENHC) ------------ */
@@ -328,35 +361,49 @@ async function startRound(){
   for(let i=0;i<activeSeatsCount;i++){ handContainer(i)?.replaceChildren(); if(totalContainer(i)) totalContainer(i).textContent=''; }
 
   if (DEBUG_FORCE){
-    hands[0].push({rank:'A',suit:'♠',hidden:false}); hands[0].push({rank:'K',suit:'♥',hidden:false});
-    dealer.push({rank:'3',suit:'♣',hidden:false});
+    for(let i=0;i<activeSeatsCount;i++){ hands[i].push({rank:'A',suit:'♠',hidden:false}); hands[i].push({rank:'9',suit:'♥',hidden:false}); }
+    dealer.push({rank:'6',suit:'♣',hidden:false});
     await slowDealRender();
-    if (isBJ(hands[0])) { playerBank += Math.floor(handBets[0]*2.5); renderBank(); await endRoundFadeAndReset(); return; }
-    setButtons(true,true,canDouble(0),false); updateRebetButton(); return;
+    // mark natural BJs (unlikely in debug here)
+  } else {
+    // === ENHC slow sequence ===
+    // Pass 1: each player gets first card, then dealer gets one upcard
+    for (let i=0;i<activeSeatsCount;i++){ const c=draw(); c.hidden=false; hands[i].push(c); await slowDealRender(); }
+    const du = draw(); du.hidden=false; dealer.push(du); await slowDealRender();
+
+    // Pass 2: each player gets second card (dealer does NOT take a hole card now)
+    for (let i=0;i<activeSeatsCount;i++){ const c=draw(); c.hidden=false; hands[i].push(c); await slowDealRender(); }
   }
 
-  // === ENHC slow sequence ===
-  // Pass 1: each player gets first card, then dealer gets one upcard
-  for (let i=0;i<activeSeatsCount;i++){ const c=draw(); c.hidden=false; hands[i].push(c); await slowDealRender(); }
-  const du = draw(); du.hidden=false; dealer.push(du); await slowDealRender();
+  // Insurance decision (single-seat only for now)
+  if (dealer[0] && dealer[0].rank==='A'){
+    // only show insurance if at least one seat is not BJ
+    const anyNonBJ = [...Array(activeSeatsCount)].some((_,i)=>!isBJ(hands[i]));
+    if (anyNonBJ) showInsuranceBar(); else hideInsuranceBar();
+  } else {
+    hideInsuranceBar();
+  }
 
-  // Pass 2: each player gets second card (dealer does NOT take a hole card now)
-  for (let i=0;i<activeSeatsCount;i++){ const c=draw(); c.hidden=false; hands[i].push(c); await slowDealRender(); }
+  // Immediate payout on natural blackjack seats (3:2), others continue
+  for (let i=0;i<activeSeatsCount;i++){
+    if (isBJ(hands[i])){
+      playerBank += Math.floor(handBets[i]*2.5);
+      finished[i]=true;
+    }
+  }
+  renderBank();
 
-  // Insurance decision
-  if (dealer[0] && dealer[0].rank==='A' && !isBJ(hands[0])) showInsuranceBar(); else hideInsuranceBar();
-
-  // Natural blackjack auto-pay (player) 3:2
-  if (isBJ(hands[0])) {
-    playerBank += Math.floor(handBets[0]*2.5);
-    renderBank();
+  // If all seats are finished right away, go to dealer to resolve pushes on non-BJ? (not needed since BJ already paid)
+  if (finished.slice(0,activeSeatsCount).every(v=>v)){
+    // All done, no need for dealer in ENHC for all BJs — just fade/reset
     await endRoundFadeAndReset();
     return;
   }
 
-  // enable player actions
-  setButtons(true,true,canDouble(0),false);
-  updateRebetButton();
+  // set the first unfinished seat as active
+  activeSeat = 0;
+  while (activeSeat<activeSeatsCount && finished[activeSeat]) activeSeat++;
+  renderAll(); // this also sets the correct buttons
 }
 
 async function slowDealRender(){
@@ -378,38 +425,55 @@ async function slowDealRender(){
       if (n>=7) root.classList.add('tighter');
     }
   }
+
+  // highlight active seat
+  seats.forEach((s,idx)=>{
+    if(!s) return;
+    s.root.classList.toggle('active', idx===activeSeat && inRound);
+  });
+
   await sleep(300); // pacing between each append
 }
 
-/* Player actions */
+/* Player actions — operate on activeSeat */
 async function doHit(){
   if(!inRound) return;
+  if(finished[activeSeat]) return;
   const h = hands[activeSeat];
   if (Number(total(h))>=21) return;
   const c=draw(); c.hidden=false; h.push(c);
   await slowDealRender();
   const t=Number(total(h));
-  if (t>=21) { await doStand(); } else { setButtons(true,true,canDouble(activeSeat),false); }
+  if (t>=21) { // bust or 21 -> auto-stand/advance
+    finished[activeSeat]=true;
+    advanceSeatOrDealer();
+  } else {
+    updateButtonsForState();
+  }
 }
 
 async function doDouble(){
   if(!inRound) return;
+  if(finished[activeSeat]) return;
   if(!canDouble(activeSeat)) return;
   if(playerBank < handBets[activeSeat]) return;
   playerBank -= handBets[activeSeat]; renderBank();
   doubled[activeSeat]=true;
   const c=draw(); c.hidden=false; hands[activeSeat].push(c);
   await slowDealRender();
-  await doStand();
+  finished[activeSeat]=true;
+  advanceSeatOrDealer();
 }
 
 async function doStand(){
   if(!inRound) return;
+  if(finished[activeSeat]) return;
   finished[activeSeat]=true;
-  await dealerPlayAndSettle_ENHC();
+  advanceSeatOrDealer();
 }
 
-async function dealerPlayAndSettle_ENHC(){
+/* ------------ Dealer play & settle ALL seats ------------ */
+async function dealerPlayAndSettleAll(){
   hideInsuranceBar();
 
   // ENHC: only now dealer draws "hole" (second) card, then plays out to S17
@@ -425,21 +489,25 @@ async function dealerPlayAndSettle_ENHC(){
     else break;
   }
 
-  // Resolve insurance (2:1 if dealer has BJ)
-  if (insuranceWager>0){
+  // Insurance resolution (only single-seat supported)
+  if (activeSeatsCount===1 && insuranceWager>0){
     if (isBJ(dealer)) playerBank += insuranceWager*3;
     insuranceWager=0; renderBank();
   }
 
-  // settle seat 1 (extend later)
-  const bet=handBets[0], dbl=doubled[0], p=Number(total(hands[0])), d=Number(total(dealer));
-  if (p>21){ /* lose */ }
-  else if (d>21){ playerBank += bet*(dbl?4:2); }
-  else if (p>d){  playerBank += bet*(dbl?4:2); }
-  else if (p===d){ playerBank += bet*(dbl?2:1); }
-  // else lose
-
+  // Settle each seat
+  const d = Number(total(dealer));
+  for (let i=0;i<activeSeatsCount;i++){
+    const bet=handBets[i], dbl=doubled[i], p=Number(total(hands[i]));
+    if (bet<=0) continue;
+    if (p>21){ /* lose */ }
+    else if (d>21){ playerBank += bet*(dbl?4:2); }
+    else if (p>d){  playerBank += bet*(dbl?4:2); }
+    else if (p===d){ playerBank += bet*(dbl?2:1); }
+    // else lose
+  }
   renderBank();
+
   await endRoundFadeAndReset();
 }
 
@@ -521,4 +589,19 @@ function initProfilePanel(){
     try{ localStorage.clear(); }catch(e){}
     location.href = location.pathname + '?fresh=1';
   });
+}
+
+/* ------------ insurance handlers ------------ */
+function initInsuranceHandlers(){
+  byId('insYes')?.addEventListener('click', ()=>{
+    if (activeSeatsCount!==1) { hideInsuranceBar(); return; } // per-seat insurance later
+    const half = Math.floor(handBets[0]/2);
+    if (playerBank >= half) {
+      insuranceWager = half;
+      playerBank -= half;
+      renderBank();
+    }
+    hideInsuranceBar();
+  });
+  byId('insNo')?.addEventListener('click', hideInsuranceBar);
 }
