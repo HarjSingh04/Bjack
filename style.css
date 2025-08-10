@@ -1,64 +1,126 @@
-/* HS Blackjack — full layout + chip fixes (stable) */
+/* HS Blackjack — full layout + chips + insurance (stable) */
 
+/* ===== Reset / Base ===== */
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
-:root{--bg:#0b132b;--panel:#1c2541;--accent:#5bc0be;--text:#fff}
-body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--text);background:var(--bg)}
+:root{
+  --bg:#0b132b; --panel:#1c2541; --accent:#5bc0be; --text:#fff;
+}
+body{
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+  color:var(--text); background:var(--bg);
+}
 
+/* ===== Header & Main ===== */
 header{max-width:1000px;margin:12px auto 0;padding:0 12px;display:flex;justify-content:flex-end}
 main{max-width:1100px;margin:0 auto;padding:12px}
 #dealerArea,#seatsArea,#seatToggle,#chipsArea,#actionButtons{margin:10px 0}
 
-/* profile */
-.profile-btn{display:flex;align-items:center;gap:10px;background:#3a506b;padding:8px 12px;border-radius:999px;cursor:pointer}
+/* ===== Profile Button ===== */
+.profile-btn{display:flex;align-items:center;gap:10px;background:#3a506b;padding:8px 12px;border-radius:999px;cursor:pointer;user-select:none}
 .profile-info{display:flex;flex-direction:column;line-height:1.1}
-#playerName{font-weight:800}
-#playerBank{font-weight:700;opacity:.9}
+#playerName{font-weight:800} #playerBank{font-weight:700;opacity:.9}
 .avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:900;background:var(--accent);color:#031926}
 .dealer-avatar{background:#f59e0b;color:#1a1200}
 
-/* table */
-#dealerArea,#seatsArea{background:var(--panel);border-radius:16px;padding:12px;box-shadow:0 10px 30px rgba(0,0,0,.35);position:relative;overflow:hidden}
-#dealerArea::before{content:"";position:absolute;inset:-20% -10% auto -10%;height:70%;background:radial-gradient(ellipse at 50% 120%,#14532d,#0b3d23 60%,transparent 65%);opacity:.5;border-radius:50%/60%}
+/* ===== Table Surfaces ===== */
+#dealerArea,#seatsArea{
+  background:var(--panel); border-radius:16px; padding:12px;
+  box-shadow:0 10px 30px rgba(0,0,0,.35); position:relative; overflow:hidden;
+}
+#dealerArea::before{
+  content:""; position:absolute; inset:-20% -10% auto -10%; height:70%;
+  background:radial-gradient(ellipse at 50% 120%,#14532d,#0b3d23 60%,transparent 65%);
+  opacity:.5; border-radius:50%/60%;
+}
 
-/* cards */
-.cards{position:relative;z-index:5;display:flex;gap:8px;flex-wrap:wrap;align-items:center;min-height:120px}
+/* ===== Cards ===== */
+.cards{
+  position:relative; z-index:5; display:flex; flex-wrap:wrap; justify-content:center;
+  gap:8px; align-items:center; min-height:120px;
+}
 .total{font-weight:800;opacity:.95;margin-top:4px}
-.card{width:64px;height:94px;border-radius:8px;position:relative;background:linear-gradient(145deg,#fff,#f1f1f1);color:#111;display:grid;place-items:center;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.35);opacity:1!important}
+.card{
+  width:64px;height:94px;border-radius:8px;position:relative;
+  background:linear-gradient(145deg,#fff,#f1f1f1); color:#111;
+  display:grid;place-items:center;font-weight:800;
+  box-shadow:0 2px 8px rgba(0,0,0,.35); opacity:1!important;
+}
 .card .small{position:absolute;top:6px;left:8px;font-size:12px}
 .card .big{font-size:22px}
 .card .suit{position:absolute;bottom:6px;right:8px;font-size:12px}
 .card.red{color:#c1121f}
 .card.back{background:repeating-linear-gradient(45deg,#19376d,#19376d 8px,#0b2447 8px,#0b2447 16px);color:#fff}
 
-/* seat bet */
-.bet{display:inline-block;background:#0b3344;border:2px dashed #ffffff33;padding:6px 10px;border-radius:999px;font-weight:800;margin:6px 0;cursor:pointer}
+/* Seat total badge pinned bottom-left */
+.seat .total{
+  position:absolute; left:12px; bottom:10px;
+  padding:2px 8px; border-radius:10px;
+  background:#0b3344; border:1px solid #ffffff22;
+}
 
-/* curved seats */
+/* Tightening when many cards */
+.seat.tight .cards .card{transform:scale(.92)}
+.seat.tighter .cards .card{transform:scale(.85)}
+
+/* ===== Seats (arc layout) ===== */
 #seatsArea.arc{position:relative;height:460px;display:block}
-#seatsArea.arc .seat{position:absolute;width:30%;min-width:280px;left:50%;transform:translateX(-50%);overflow:visible}
+#seatsArea.arc .seat{
+  position:absolute; width:30%; min-width:280px; left:50%;
+  transform:translateX(-50%); overflow:visible;
+}
 #seatsArea.arc .seat[data-seat="1"]{top:140px;transform:translateX(-160%) rotate(-6deg)}
 #seatsArea.arc .seat[data-seat="2"]{top:170px;transform:translateX(-50%) rotate(0)}
 #seatsArea.arc .seat[data-seat="3"]{top:140px;transform:translateX(60%) rotate(6deg)}
-@media (max-width:820px){#seatsArea.arc{height:auto}#seatsArea.arc .seat{position:static;width:100%;transform:none;min-width:0;margin-bottom:12px}}
+
+@media (max-width:820px){
+  #seatsArea.arc{height:auto}
+  #seatsArea.arc .seat{position:static;width:100%;transform:none;min-width:0;margin-bottom:12px}
+}
+
+/* Solo / Duo / Trio visibility */
 #seatsArea.solo .seat{display:none}
-#seatsArea.solo .seat[data-seat="1"]{display:block;top:140px;left:50%;transform:translateX(-50%)}
+#seatsArea.solo .seat[data-seat="1"]{display:block;top:140px;left:50%;transform:translateX(-50%) rotate(0)}
 #seatsArea.duo .seat{display:none}
 #seatsArea.duo .seat[data-seat="1"]{display:block;top:170px;transform:translateX(-110%) rotate(-4deg)}
 #seatsArea.duo .seat[data-seat="2"]{display:block;top:170px;transform:translateX(10%) rotate(4deg)}
 #seatsArea.trio .seat{display:block}
-.seat{background:#162238;border-radius:12px;padding:10px;outline:2px solid transparent;transition:outline-color .15s,box-shadow .15s}
+
+.seat{
+  background:#162238;border-radius:12px;padding:10px;
+  outline:2px solid transparent; transition:outline-color .15s, box-shadow .15s;
+}
 .seat.active{outline-color:var(--accent);box-shadow:0 0 18px rgba(91,192,190,.25)}
 
-/* z-index safety */
+/* Optional seat avatar */
+.seat .seat-avatar{
+  position:absolute; top:-14px; left:-14px; width:36px; height:36px; border-radius:50%;
+  display:grid; place-items:center; font-weight:900; background:#3ddc97; color:#032b2b;
+  box-shadow:0 2px 8px rgba(0,0,0,.35); z-index:5;
+}
+
+/* ===== Bet pill ===== */
+.bet{
+  display:inline-block;background:#0b3344;border:2px dashed #ffffff33;
+  padding:6px 10px;border-radius:999px;font-weight:800;margin:6px 0;cursor:pointer;
+}
+
+/* ===== Z-index safety ===== */
 #dealerArea{position:relative;z-index:1}
 #seatsArea{position:relative;z-index:2}
 .seat{position:relative;z-index:3;overflow:visible}
 .seat .cards{position:relative;z-index:4}
 
-/* chip tray */
-#chipsArea{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:18px;position:relative;z-index:10}
-.chip-img{width:74px;height:74px;border-radius:50%;background:#fff;color:#111;display:grid;place-items:center;font-weight:900;font-size:16px;cursor:pointer;transition:transform .1s,box-shadow .15s;border:4px solid #ff4c4c}
+/* ===== Chip tray (big selectable chips) ===== */
+#chipsArea{
+  display:flex;justify-content:center;gap:12px;flex-wrap:wrap;
+  margin-top:18px;position:relative;z-index:10;
+}
+.chip-img{
+  width:74px;height:74px;border-radius:50%;background:#fff;color:#111;
+  display:grid;place-items:center;font-weight:900;font-size:16px;
+  cursor:pointer;transition:transform .1s,box-shadow .15s;border:4px solid #ff4c4c;
+}
 .chip-img:hover{transform:scale(1.08);box-shadow:0 6px 16px rgba(0,0,0,.35)}
 .chip-img span{pointer-events:none}
 .chip-img.chip-5{border-color:#2ecc71}
@@ -66,9 +128,14 @@ main{max-width:1100px;margin:0 auto;padding:12px}
 .chip-img.chip-50{border-color:#f1c40f}
 .chip-img.chip-100{border-color:#9b59b6}
 
-/* chip stacks */
+/* ===== Bet stacks (chips on the table) ===== */
 .bet-stack{position:relative;height:70px;margin-top:6px;pointer-events:none}
-.chip-token{width:40px;height:40px;border-radius:50%;position:absolute;left:8px;bottom:6px;display:grid;place-items:center;font:900 11px/1 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#111;background:#fff;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35));transform:translateY(12px) scale(.8);opacity:0;transition:transform .22s,opacity .22s;border:3px solid #3498db}
+.chip-token{
+  width:40px;height:40px;border-radius:50%;position:absolute;left:8px;bottom:6px;
+  display:grid;place-items:center;font:900 11px/1 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+  color:#111;background:#fff;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35));
+  transform:translateY(12px) scale(.8);opacity:0;transition:transform .22s,opacity .22s;border:3px solid #3498db;
+}
 .chip-token.in{transform:translateY(0) scale(1);opacity:1}
 .chip-token.locked{filter:grayscale(.2) brightness(.95)}
 .chip-token>span{position:absolute;inset:0;display:grid;place-items:center;font-weight:900;color:#111}
@@ -77,14 +144,34 @@ main{max-width:1100px;margin:0 auto;padding:12px}
 .chip-token.v50{border-color:#f1c40f}
 .chip-token.v100{border-color:#9b59b6}
 
-/* actions */
+/* ===== Action buttons ===== */
 #actionButtons{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
-#actionButtons button{padding:10px 14px;border-radius:10px;border:none;font-weight:800;background:var(--accent);color:#031926;cursor:pointer}
+#actionButtons button{
+  padding:10px 14px;border-radius:10px;border:none;font-weight:800;
+  background:var(--accent);color:#031926;cursor:pointer
+}
 button.dimmed{opacity:.4;pointer-events:none}
 
-/* profile panel */
-.panel{position:fixed;right:-320px;top:0;width:320px;height:100%;background:var(--panel);box-shadow:-2px 0 20px rgba(0,0,0,.35);padding:14px;transition:right .25s;z-index:1000}
+/* ===== Profile/Settings Panel ===== */
+.panel{
+  position:fixed;right:-320px;top:0;width:320px;height:100%;
+  background:var(--panel);box-shadow:-2px 0 20px rgba(0,0,0,.35);
+  padding:14px;transition:right .25s;z-index:1000;
+}
 .panel.open{right:0}
 .profile-header{display:flex;align-items:center;gap:12px;padding-bottom:10px;border-bottom:1px solid #ffffff22}
 .close-btn{margin-left:auto;padding:6px 10px;border:none;border-radius:8px;background:var(--accent);color:#031926;font-weight:800;cursor:pointer}
 .settings-group{display:flex;flex-direction:column;gap:6px;padding:10px 0;border-bottom:1px solid #ffffff0f}
+
+/* ===== Insurance prompt ===== */
+.insurance{
+  position:fixed; left:50%; bottom:16px; transform:translateX(-50%);
+  display:none; gap:10px; align-items:center;
+  background:#14213d; color:#fff; padding:10px 12px;
+  border-radius:10px; box-shadow:0 -6px 20px rgba(0,0,0,.35); z-index:2000;
+}
+.insurance.show{ display:flex; }
+.insurance .btn{
+  background:var(--accent); color:#031926;
+  border:none; border-radius:8px; padding:6px 10px; font-weight:800; cursor:pointer;
+}
