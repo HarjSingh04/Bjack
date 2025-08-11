@@ -512,55 +512,64 @@ async function doSplit(){
 async function dealerPlayAndSettleAll(){
   hideInsuranceBar();
 
-  if (dealer.length===1){ const hole = draw(); hole.hidden=false; dealer.push(hole); await slowDealRender(); }
+  // Reveal hole card if needed
+  if (dealer.length === 1) {
+    const hole = draw(); hole.hidden = false; dealer.push(hole);
+    await slowDealRender();
+  }
 
-  while(true){
+  // Dealer draws to 17 (stand on all 17s; you can change soft rule elsewhere)
+  while (true) {
     const t = Number(total(dealer));
-    if (t<17){ const c=draw(); c.hidden=false; dealer.push(c); await slowDealRender(); }
-    else break;
+    if (t < 17) {
+      const c = draw(); c.hidden = false; dealer.push(c);
+      await slowDealRender();
+    } else break;
   }
 
-  if (activeSeatsCount===1 && insuranceWager>0){
-    if (isBJ(dealer)) playerBank += insuranceWager*3;
-    insuranceWager=0;
+  // Insurance settle (single-seat only for now)
+  if (activeSeatsCount === 1 && insuranceWager > 0) {
+    if (isBJ(dealer)) playerBank += insuranceWager * 3; // 2:1 profit + stake
+    insuranceWager = 0;
   }
 
-  const d = Number(total(dealer));
+  // --- Settle each seat (hardened) ---
+  const dRaw = Number(total(dealer));
+  const d = Number.isFinite(dRaw) ? dRaw : 0;
+
   const bubblePlans = [];
- // --- Settle each seat (hardened) ---
-const dRaw = Number(total(dealer));
-const d = Number.isFinite(dRaw) ? dRaw : 0;
+  for (let i = 0; i < activeSeatsCount; i++) {
+    const bet = handBets[i];
+    if (!bet || bet <= 0) continue;
 
-const bubblePlans = [];
-for (let i = 0; i < activeSeatsCount; i++) {
-  const bet = handBets[i];
-  if (!bet || bet <= 0) continue;
+    const pRaw = Number(total(hands[i]));
+    const p = Number.isFinite(pRaw) ? pRaw : 0;
+    const dbl = !!doubled[i];
 
-  const pRaw = Number(total(hands[i]));
-  const p = Number.isFinite(pRaw) ? pRaw : 0;
-  const dbl = !!doubled[i];
+    let plan;
+    if (p > 21) {
+      // player bust
+      plan = { seat:i, text:`– $${bet * (dbl ? 2 : 1)}`, cls:'lose' };
+    } else if (d > 21) {
+      // dealer bust
+      playerBank += bet * (dbl ? 4 : 2);
+      plan = { seat:i, text:`+ $${bet * (dbl ? 2 : 1)}`, cls:'win' };
+    } else if (p > d) {
+      // player higher
+      playerBank += bet * (dbl ? 4 : 2);
+      plan = { seat:i, text:`+ $${bet * (dbl ? 2 : 1)}`, cls:'win' };
+    } else if (p === d) {
+      // push returns the stake (double returns doubled stake)
+      playerBank += bet * (dbl ? 2 : 1);
+      plan = { seat:i, text:`Push`, cls:'push' };
+    } else {
+      // dealer higher
+      plan = { seat:i, text:`– $${bet * (dbl ? 2 : 1)}`, cls:'lose' };
+    }
 
-  let plan; // {seat,i,text,cls}
-  if (p > 21) {
-    plan = { seat:i, text:`– $${bet * (dbl?2:1)}`, cls:'lose' };
-  } else if (d > 21) {
-    playerBank += bet * (dbl?4:2);
-    plan = { seat:i, text:`+ $${bet * (dbl?2:1)}`, cls:'win' };
-  } else if (p > d) {
-    playerBank += bet * (dbl?4:2);
-    plan = { seat:i, text:`+ $${bet * (dbl?2:1)}`, cls:'win' };
-  } else if (p === d) {
-    // Push ALWAYS returns the stake (and double returns the doubled stake)
-    playerBank += bet * (dbl?2:1);
-    plan = { seat:i, text:`Push`, cls:'push' };
-  } else {
-    plan = { seat:i, text:`– $${bet * (dbl?2:1)}`, cls:'lose' };
+    bubblePlans.push(plan);
   }
-
-  bubblePlans.push(plan);
-}
-renderBank();
-
+  renderBank();
 
   await showPayoutBubbles(bubblePlans);
   await endRoundFadeAndReset();
