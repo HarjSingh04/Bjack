@@ -1,199 +1,99 @@
-/* =========================
-   HS Blackjack — FULL CSS
-   Modern table, responsive, payout bubbles
-   ========================= */
 /* ===== Reset / base ===== */
-* { box-sizing: border-box; }
-html, body { height: 100%; }
+*{box-sizing:border-box}
+html,body{height:100%}
 :root{
-  --bg: #081522;
-  --panel: #0c2234;
-  --mint: #68d5c9;
-  --mint-2:#9ad1c6;
-  --ink: #0b3344;
-  --line: #ffffff22;
-  --white:#fff;
+  --bg:#081522;--panel:#0c2234;--ink:#0b3344;--line:#ffffff22;--white:#fff;
+  --mint:#38b6ab;--glow:#79e1f7;
 }
-body{
-  margin:0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-  color: var(--white);
-  background: var(--bg);
-}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--white);background:var(--bg)}
 
 /* ===== Header ===== */
-#topbar{
-  max-width: 1100px; margin: 14px auto 8px;
-  display:flex; justify-content: space-between; align-items: center;
-  padding: 0 12px;
-}
-#buildBadge{ opacity:.8; font-weight:700; }
-#playerBadge{
-  display:flex; align-items:center; gap:10px;
-  background:#123346; border:1px solid var(--line); border-radius:999px;
-  padding:6px 12px;
-}
-#playerBadge .tag{
-  display:inline-grid; place-items:center;
-  width:28px; height:28px; border-radius:999px;
-  background:#38b6ab; color:#012; font-weight:800;
-}
+#topbar{max-width:1100px;margin:14px auto 8px;display:flex;justify-content:space-between;align-items:center;padding:0 12px}
+#playerBadge{display:flex;gap:10px;align-items:center;background:#123346;border:1px solid var(--line);border-radius:999px;padding:6px 12px}
+#playerBadge .tag{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:999px;background:#38b6ab;color:#012;font-weight:800}
 
 /* ===== Dealer area ===== */
-#dealerArea{
-  position: relative;
-  max-width: 1100px; margin: 8px auto;
-  padding: 26px 12px 42px;
-  background: radial-gradient(120% 120% at 50% -20%, #14506870, transparent 60%),
-              radial-gradient(120% 120% at 50% 120%, #0f2c40a6, transparent 65%),
-              var(--panel);
-  border: 1px dashed #ffffff26; border-radius: 18px;
-  overflow:hidden;
-}
-.dealer-photo{
-  position:absolute; top:-10px; left:50%;
-  transform: translateX(-50%);
-  width: 120px; height: auto; z-index: 2; pointer-events:none;
-  filter: drop-shadow(0 8px 14px rgba(0,0,0,.35));
-}
-#dealerCards{
-  position:absolute; top: 64%; left:50%; transform: translate(-50%,-50%);
-  display:flex; gap:8px; z-index:3;
-}
-#dealerTotal{
-  position:absolute; top: 86%; left:50%; transform:translateX(-50%);
-  background: var(--ink); border:1px solid var(--line); border-radius:10px;
-  padding: 2px 10px; font-weight:800; z-index:3;
-}
+#dealerArea{position:relative;max-width:1100px;margin:8px auto;padding:26px 12px 42px;background:
+  radial-gradient(120% 120% at 50% -20%, #14506870, transparent 60%),
+  radial-gradient(120% 120% at 50% 120%, #0f2c40a6, transparent 65%),
+  var(--panel);
+border:1px dashed #ffffff26;border-radius:18px;overflow:hidden}
+.dealer-photo{position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:120px;z-index:2;pointer-events:none;display:block}
+#dealerCards{position:absolute;top:62%;left:50%;transform:translate(-50%,-50%);display:flex;gap:8px;z-index:3}
+#dealerTotal{position:absolute;top:84%;left:50%;transform:translateX(-50%);background:var(--ink);border:1px solid var(--line);border-radius:10px;padding:2px 10px;font-weight:800;z-index:3}
 
 /* ===== Seats area ===== */
-#seatsArea{
-  position: relative;
-  max-width: 1100px; margin: 12px auto 0;
-  padding: 32px 16px 28px;
-  background: radial-gradient(110% 110% at 50% -10%, #13425a66, transparent 60%),
-              radial-gradient(110% 110% at 50% 120%, #0e2a3d8a, transparent 65%),
-              var(--panel);
-  border: 1px dashed #ffffff26; border-radius: 18px;
-  min-height: 360px;
-}
-#seatsArea.arc{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-#seatsArea.solo{ grid-template-columns: 1fr; }
-#seatsArea.duo { grid-template-columns: repeat(2,1fr); }
+#seatsArea{position:relative;max-width:1100px;margin:12px auto 0;padding:24px 16px 26px;background:
+  radial-gradient(110% 110% at 50% -10%, #13425a66, transparent 60%),
+  radial-gradient(110% 110% at 50% 120%, #0e2a3d8a, transparent 65%),
+  var(--panel);
+border:1px dashed #ffffff26;border-radius:18px;min-height:380px;display:grid;gap:18px}
+#seatsArea.solo{grid-template-columns:1fr}
+#seatsArea.duo{grid-template-columns:repeat(2,1fr)}
+#seatsArea.trio{grid-template-columns:repeat(3,1fr)}
 
 /* ===== Seat ===== */
-.seat{ position: relative; min-height: 260px; border-radius: 16px; }
-.seat.fade-out{ opacity:0; transition:opacity .35s ease; }
+.seat{position:relative;min-height:260px;border-radius:16px}
+.seat.fade-out{opacity:0;transition:opacity .35s ease}
+.seat-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.16;filter:saturate(1.2);z-index:1;pointer-events:none}
+/* remove any old squares */
+.seat::before,.seat::after{display:none!important;content:none!important}
 
-/* REMOVE old dark square / outlines completely */
-.seat::before, .seat::after{ display:none !important; content:none !important; }
+/* Center the only seat nicely on wide screens */
+#seatsArea.solo .seat{width:clamp(320px,42vw,520px);margin:0 auto}
 
-/* Optional seat photo (behind everything) */
-.seat-photo{
-  position:absolute; inset:0; width:100%; height:100%; object-fit: cover;
-  opacity:.16; filter: saturate(1.2);
-  z-index:1; pointer-events:none;
-}
-
-/* NEW dashed betting box */
-.bet-box{
-  position: absolute;
-  top: 18px; left: 18px; right: 18px; bottom: 18px;
-  background: url('assets/bet-box.svg') center/contain no-repeat;
-  z-index: 2;
-  transition: transform .12s ease, filter .12s ease;
-}
-.seat.active .bet-box{ filter: drop-shadow(0 0 10px rgba(121,225,247,.35)); }
-.bet-box:active{ transform: scale(.985); }
+/* Bet box (dashed rect image) */
+.bet-box{position:absolute;top:18px;left:18px;right:18px;bottom:18px;
+  background:url('assets/bet-box.svg') center/contain no-repeat;z-index:2;transition:transform .12s ease,filter .12s ease}
+.seat.active .bet-box{filter:drop-shadow(0 0 10px rgba(121,225,247,.35))}
+.bet-box:active{transform:scale(.985)}
 
 /* Cards live inside the box */
-.seat .cards{
-  position:absolute; top: 34px; left:34px; right:34px; bottom:30px;
-  display:flex; flex-wrap:wrap; gap:8px; justify-content:center; align-items:center;
-  z-index:4;
-}
+.seat .cards{position:absolute;top:34px;left:34px;right:34px;bottom:30px;
+  display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;z-index:4}
 
 /* Bet label + stack (inside the box) */
-.seat .bet{
-  position:absolute; top: 26px; left: 26px;
-  background: var(--ink); border:1px solid var(--line); border-radius:999px;
-  padding: 4px 10px; font-weight:800; z-index:5; cursor:pointer;
-}
-.seat .bet-stack{
-  position:absolute; left: 26px; bottom: 26px; width:80px; height:72px; z-index:5;
-  pointer-events:none;
-}
+.seat .bet{position:absolute;top:26px;left:26px;background:var(--ink);border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-weight:800;z-index:5;cursor:pointer}
+.seat .bet-stack{position:absolute;left:26px;bottom:26px;width:80px;height:72px;z-index:5;pointer-events:none}
 
-/* Card visuals */
-.card{
-  width:66px; height:96px; border-radius:10px;
-  background:#fff; color:#222; display:grid; place-items:center;
-  box-shadow: 0 12px 18px rgba(0,0,0,.25);
-  transition: transform .18s ease, opacity .18s ease;
-}
-.card.red{ color:#c73742; }
-.card.back{ background: linear-gradient(135deg,#234a68 0%,#2a5c7f 100%); color:#fff; }
-.card .small{ position:absolute; top:6px; left:6px; font-size:12px; font-weight:800; }
-.card .big{ font-size:24px; font-weight:800; line-height:1; }
-.card .suit{ position:absolute; bottom:6px; right:6px; font-size:12px; }
+/* Cards */
+.card{width:66px;height:96px;border-radius:10px;background:#fff;color:#222;display:grid;place-items:center;
+  box-shadow:0 12px 18px rgba(0,0,0,.25);transition:transform .18s ease,opacity .18s ease}
+.card.red{color:#c73742}
+.card.back{background:linear-gradient(135deg,#234a68 0%,#2a5c7f 100%);color:#fff}
+.card .small{position:absolute;top:6px;left:6px;font-size:12px;font-weight:800}
+.card .big{font-size:24px;font-weight:800;line-height:1}
+.card .suit{position:absolute;bottom:6px;right:6px;font-size:12px}
+.card.deal-slow{opacity:0;transform:translateY(-10px) scale(.95)}
+.card.deal-slow.show{opacity:1;transform:translateY(0) scale(1)}
 
-.card.deal-slow{ opacity:0; transform: translateY(-10px) scale(.95); }
-.card.deal-slow.show{ opacity:1; transform: translateY(0) scale(1); }
+/* Totals & payout */
+.total{position:absolute;top:6px;left:50%;transform:translateX(-50%);background:var(--ink);border:1px solid var(--line);border-radius:10px;padding:2px 10px;font-weight:800;z-index:5}
+.payout{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(.9);
+  background:#0a3a50;border:1px solid #2dd4bf66;border-radius:999px;padding:8px 16px;font-weight:800;opacity:0;z-index:6;
+  transition:transform .16s ease,opacity .16s ease}
+.payout.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.payout.win{color:#67f6d1}.payout.push{color:#9fc0ff}.payout.lose{color:#ff8a8a}
 
-/* Total badge */
-.total{
-  position:absolute; top: 6px; left: 50%; transform: translateX(-50%);
-  background: var(--ink); border:1px solid var(--line); border-radius:10px;
-  padding:2px 10px; font-weight:800; z-index:5;
-}
+/* Chips / actions */
+#seatToggle,#chipsArea,#actionButtons{max-width:1100px;margin:12px auto;display:flex;justify-content:center;gap:8px}
+#chipsArea .chip-img{width:68px;height:68px;border-radius:999px;border:4px solid #ff5a5a;background:#fff;font-weight:800;cursor:pointer}
+#actionButtons button,#seatToggle button,#insuranceBar button{background:var(--mint);border:none;color:#012;border-radius:10px;padding:8px 12px;font-weight:800}
+#actionButtons button.dimmed{opacity:.45;pointer-events:none}
+#seatToggle button.active{outline:2px solid #fff3}
 
-/* Payout bubble */
-.payout{
-  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scale(.9);
-  background:#0a3a50; border:1px solid #2dd4bf66; border-radius:999px;
-  padding:8px 16px; font-weight:800; opacity:0; z-index:6;
-  transition: transform .16s ease, opacity .16s ease;
-}
-.payout.show{ opacity:1; transform:translate(-50%,-50%) scale(1); }
-.payout.win{ color:#67f6d1; }
-.payout.push{ color:#9fc0ff; }
-.payout.lose{ color:#ff8a8a; }
-
-/* Chips & actions */
-#seatToggle, #chipsArea, #actionButtons{
-  max-width:1100px; margin: 12px auto; display:flex; justify-content:center; gap:8px;
-}
-#chipsArea .chip-img{
-  width:68px; height:68px; border-radius:999px; border:4px solid #ff5a5a;
-  background:#fff; font-weight:800; cursor:pointer;
-}
-#actionButtons button, #seatToggle button, #insuranceBar button{
-  background:#38b6ab; border:none; color:#012; border-radius:10px; padding:8px 12px; font-weight:800;
-}
-#actionButtons button.dimmed{ opacity:.45; pointer-events:none; }
-#seatToggle button.active{ outline:2px solid #fff3; }
-
-/* Insurance bar */
-#insuranceBar{
-  max-width:1100px; margin: 10px auto; padding:10px 12px; text-align:center;
-  background:#0f2b3d; border:1px solid var(--line); border-radius:10px; display:none;
-}
-#insuranceBar.show{ display:block; }
-
-/* Fade out at round end */
-#dealerArea.fade-out{ opacity:0; transition:opacity .35s ease; }
+/* Insurance */
+#insuranceBar{max-width:1100px;margin:10px auto;padding:10px 12px;text-align:center;background:#0f2b3d;border:1px solid var(--line);border-radius:10px;display:none}
+#insuranceBar.show{display:block}
 
 /* Mobile tweaks */
-@media (max-width: 600px){
-  #dealerArea{ aspect-ratio: 16/6; }
-  #seatsArea { aspect-ratio: auto; min-height: 520px; }
-  #seatsArea.arc{ display:block; }
-  .seat{ min-height: 220px; margin-bottom:14px; }
-  .bet-box{ top:12px; left:12px; right:12px; bottom:12px; }
-  .seat .cards{ top:26px; left:26px; right:26px; bottom:24px; }
-  .seat .bet{ top:18px; left:18px; }
-  .seat .bet-stack{ left:18px; bottom:18px; }
-  .card{ width:58px; height:84px; }
-  #dealerCards{ top: 80%; }
-  #dealerTotal{ top: 96%; }
+@media (max-width:600px){
+  #dealerArea{aspect-ratio:16/6}
+  #dealerCards{top:80%} #dealerTotal{top:96%}
+  #seatsArea{min-height:520px;display:block}
+  .seat{min-height:220px;margin-bottom:14px}
+  .bet-box{top:12px;left:12px;right:12px;bottom:12px}
+  .seat .cards{top:26px;left:26px;right:26px;bottom:24px}
+  .seat .bet{top:18px;left:18px}.seat .bet-stack{left:18px;bottom:18px}
+  .card{width:58px;height:84px}
 }
