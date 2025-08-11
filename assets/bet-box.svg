@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 300" width="420" height="300">
+  <defs>
+    <linearGradient id="glow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#79e1f7" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#79e1f7" stop-opacity="0.0"/>
+    </linearGradient>
+  </defs>
+  <!-- soft outer glow -->
+  <ellipse cx="210" cy="260" rx="180" ry="24" fill="url(#glow)"/>
+  <!-- bet box -->
+  <rect x="18" y="18" width="384" height="224" rx="18"
+        fill="none" stroke="#9ad1c6" stroke-opacity="0.75" stroke-width="4"
+        stroke-dasharray="10 10"/>
+</svg>
