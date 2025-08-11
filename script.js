@@ -1,10 +1,10 @@
-/* HS Blackjack — Multi-seat + slow deal + payout bubbles + fade + bank guard */
-var BUILD = 'stable-2025-08-10-payouts';
+/* HS Blackjack — Multi-seat + slow deal + payout bubbles + bank guard + SPLIT-as-seat */
+var BUILD = 'stable-2025-08-11-split';
 var DEBUG_FORCE = false; // live
 
 /* ===== speed knob ===== */
-const DEAL_MS = 380;   // card-to-card pacing (ms)
-const BUBBLE_MS = 1100; // time to show payout bubble before fade
+const DEAL_MS = 380;    // card-to-card pacing (ms)
+const BUBBLE_MS = 1100; // payout bubble show time
 
 // cache-buster (?fresh=1)
 (function freshLoader(){
@@ -29,10 +29,11 @@ const $$ = s => Array.from(document.querySelectorAll(s));
 const byId = id => document.getElementById(id);
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 function stagedSum(){ let sum=0; for(let i=0;i<activeSeatsCount;i++) sum += (stagedBets[i]||0); return sum; }
+function isTenVal(r){ return r==='10'||r==='J'||r==='Q'||r==='K'; }
 
 /* ------------ state ------------ */
 let playerBank = 1000;
-let activeSeatsCount = 1;
+let activeSeatsCount = 1;       // user-selected seats before round; may grow by Split during round
 let stagedBets = [0,0,0];
 
 let dealer = [];
@@ -43,7 +44,7 @@ let finished = [false,false,false];
 let activeSeat = 0;
 let inRound = false;
 
-// Insurance (single-seat for now)
+// Insurance (single-seat UI for now)
 let insuranceWager = 0;
 let allowInsurance = true;
 
@@ -170,6 +171,22 @@ function removeLastChipToken(i){
   setTimeout(()=> last.remove(), 140);
   return val;
 }
+function cloneStackTokens(fromIndex, toIndex){
+  const src = seats[fromIndex]?.stack, dst = seats[toIndex]?.stack;
+  if (!src || !dst) return;
+  dst.innerHTML = '';
+  Array.from(src.children).forEach((node, n)=> {
+    const m = node.className.match(/v(\d+)/);
+    const valClass = m ? 'v'+m[1] : '';
+    const t = document.createElement('div');
+    t.className = `chip-token ${valClass} in locked`;
+    t.innerHTML = node.innerHTML;
+    const x = (-4 + (n%3)*4), y = n*6;
+    t.style.transform = `translate(${x}px, ${-y}px) scale(1)`;
+    t.style.zIndex = String(100+n);
+    dst.appendChild(t);
+  });
+}
 function lockStacks(){
   seats.slice(0,activeSeatsCount).forEach(s=>{
     if(!s.stack) return;
@@ -188,7 +205,7 @@ function initActions(){
   byId('hitBtn')?.addEventListener('click', doHit);
   byId('standBtn')?.addEventListener('click', doStand);
   byId('doubleBtn')?.addEventListener('click', doDouble);
-  byId('splitBtn')?.addEventListener('click', ()=>{}); // split later
+  byId('splitBtn')?.addEventListener('click', doSplit);
 }
 function setBtn(sel,on){ const b=$(sel); if(!b) return; b.disabled=!on; b.classList.toggle('dimmed', !on); }
 function setButtons(h,s,d,sp){ setBtn('#hitBtn',h); setBtn('#standBtn',s); setBtn('#doubleBtn',d); setBtn('#splitBtn',sp); }
@@ -238,6 +255,15 @@ function canDouble(i){
   const t = Number(total(h)); if(Number.isNaN(t)) return false;
   return (t===9 || t===10 || t===11) && playerBank>=handBets[i];
 }
+function canSplit(i){
+  const h = hands[i];
+  if (!h || h.length !== 2) return false;
+  const a = h[0].rank, b = h[1].rank;
+  const isPair = a === b || (isTenVal(a) && isTenVal(b)); // allow 10/J/Q/K pair
+  const hasSeatRoom = activeSeatsCount < 3;               // we’ll host split on a new seat
+  const canAfford = playerBank >= handBets[i];
+  return isPair && hasSeatRoom && canAfford && inRound && !finished[i];
+}
 
 /* ------------ bank ui ------------ */
 function renderBank(){ byId('playerBank').textContent = '$'+playerBank; }
@@ -273,10 +299,7 @@ function renderAll(){
   }
 
   // highlight active seat
-  seats.forEach((s,idx)=>{
-    if(!s) return;
-    s.root.classList.toggle('active', idx===activeSeat && inRound);
-  });
+  seats.forEach((s,idx)=> s?.root.classList.toggle('active', idx===activeSeat && inRound));
 
   updateButtonsForState();
 }
@@ -287,13 +310,14 @@ function updateButtonsForState(){
   const canH = t<21;
   const canS = true;
   const canD = canDouble(activeSeat);
-  setButtons(canH,canS,canD,false);
+  const canSp = canSplit(activeSeat);
+  setButtons(canH,canS,canD,canSp);
 }
 
 /* ------------ insurance bar ------------ */
 function initInsuranceHandlers(){
   byId('insYes')?.addEventListener('click', ()=>{
-    if (activeSeatsCount!==1) { hideInsuranceBar(); return; } // per-seat insurance later
+    if (activeSeatsCount!==1) { hideInsuranceBar(); return; } // per-seat later
     const half = Math.floor(handBets[0]/2);
     if (playerBank >= half) { insuranceWager = half; playerBank -= half; renderBank(); }
     hideInsuranceBar();
@@ -415,6 +439,53 @@ async function doStand(){
   advanceSeatOrDealer();
 }
 
+/* Split: turn the right-adjacent empty seat into the split hand */
+async function doSplit(){
+  if (!canSplit(activeSeat)) return;
+
+  // Where to insert new hand
+  const insertAt = activeSeat + 1;
+  const newSeatIndex = insertAt;
+
+  // Expand seat count (cap at 3), lay out seats, refresh refs
+  activeSeatsCount = Math.min(3, activeSeatsCount + 1);
+  applySeatLayout();
+  cacheDom();
+
+  // Shift any existing right seat data up by one to free the slot
+  for (let i = activeSeatsCount - 1; i > newSeatIndex; i--){
+    hands[i]    = hands[i-1];
+    handBets[i] = handBets[i-1];
+    doubled[i]  = doubled[i-1];
+    finished[i] = finished[i-1];
+  }
+
+  // Move second card to the new hand
+  const orig = hands[activeSeat];
+  const moved = orig.pop();
+  hands[newSeatIndex] = [ moved ];
+  finished[newSeatIndex] = false;
+  doubled[newSeatIndex]  = false;
+
+  // Copy bet; deduct stake for new hand
+  const stake = handBets[activeSeat];
+  handBets[newSeatIndex] = stake;
+  playerBank -= stake; renderBank();
+
+  // Copy chip visuals, lock stacks
+  cloneStackTokens(activeSeat, newSeatIndex);
+  lockStacks();
+
+  // Deal one card to each split hand
+  const c1 = draw(); c1.hidden=false; hands[activeSeat].push(c1);
+  await slowDealRender();
+  const c2 = draw(); c2.hidden=false; hands[newSeatIndex].push(c2);
+  await slowDealRender();
+
+  // Continue play from current seat; later flow advances to the new seat
+  updateButtonsForState();
+}
+
 /* ------------ Dealer play & settle ALL seats ------------ */
 async function dealerPlayAndSettleAll(){
   hideInsuranceBar();
@@ -432,9 +503,8 @@ async function dealerPlayAndSettleAll(){
     insuranceWager=0;
   }
 
-  // settle each seat & build bubbles list
   const d = Number(total(dealer));
-  const bubblePlans = []; // [{seat, text, cls}]
+  const bubblePlans = [];
   for (let i=0;i<activeSeatsCount;i++){
     const bet=handBets[i]; if (bet<=0) continue;
     const dbl=doubled[i], p=Number(total(hands[i]));
@@ -447,13 +517,11 @@ async function dealerPlayAndSettleAll(){
   renderBank();
 
   await showPayoutBubbles(bubblePlans);
-
-  await endRoundFadeAndReset(bubblePlans);
+  await endRoundFadeAndReset();
 }
 
 /* ===== payout bubbles ===== */
 async function showPayoutBubbles(plans){
-  // create & show
   plans.forEach(p=>{
     const seat = seats[p.seat]?.root; if(!seat) return;
     let div = seat.querySelector('.payout');
@@ -461,11 +529,9 @@ async function showPayoutBubbles(plans){
     div.textContent = p.text;
     div.classList.remove('win','push','lose','show');
     div.classList.add(p.cls);
-    // show on next tick
     requestAnimationFrame(()=> div.classList.add('show'));
   });
   await sleep(BUBBLE_MS);
-  // hide
   plans.forEach(p=>{
     const seat = seats[p.seat]?.root; const div = seat?.querySelector('.payout');
     if (div) div.classList.remove('show');
@@ -473,7 +539,7 @@ async function showPayoutBubbles(plans){
 }
 
 /* ------------ Round end fade + reset ------------ */
-async function endRoundFadeAndReset(/*plans*/){
+async function endRoundFadeAndReset(){
   byId('dealerArea')?.classList.add('fade-out');
   $$('#seatsArea .seat').forEach(seat=> seat.classList.add('fade-out'));
   await sleep(380);
@@ -486,6 +552,12 @@ async function endRoundFadeAndReset(/*plans*/){
     const bubble = seat?.querySelector('.payout'); if (bubble) bubble.remove();
   }
   clearStacksAndBets();
+
+  // Reset to the user-selected seats (don’t keep extra split seats next round)
+  // If you want to keep the expanded seats next hand, remove the next two lines.
+  // (We’ll just collapse to however many have stagedBets > 0)
+  // For now: keep whatever seat toggle the user set before dealing:
+  // (No change to activeSeatsCount here)
 
   inRound=false;
   setButtons(false,false,false,false);
@@ -517,6 +589,7 @@ function doRebet(){
 function initSeatToggle(){
   $$('#seatToggle button').forEach(btn=>{
     btn.addEventListener('click', ()=>{
+      if (inRound) return; // don’t allow changing seats mid-round
       $$('#seatToggle button').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       activeSeatsCount = parseInt(btn.getAttribute('data-seats'),10)||1;
