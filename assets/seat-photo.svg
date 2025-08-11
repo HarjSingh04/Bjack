@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700" width="1000" height="700">
+  <defs>
+    <radialGradient id="felt" cx="50%" cy="45%" r="70%">
+      <stop offset="0" stop-color="#1a7a64" stop-opacity=".95"/>
+      <stop offset="1" stop-color="#0f4d3f" stop-opacity=".95"/>
+    </radialGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0b1720"/>
+      <stop offset="1" stop-color="#101b28"/>
+    </linearGradient>
+  </defs>
+
+  <!-- soft rounded seat panel -->
+  <rect x="24" y="24" width="952" height="652" rx="36" fill="url(#edge)" opacity=".55"/>
+  <rect x="40" y="40" width="920" height="620" rx="32" fill="url(#felt)"/>
+
+  <!-- subtle table arcs -->
+  <path d="M80 250c140-40 300-60 420-60s280 20 420 60" fill="none" stroke="#79e1f733" stroke-width="10" stroke-linecap="round"/>
+  <path d="M100 310c150-36 290-50 400-50s250 14 400 50" fill="none" stroke="#79e1f724" stroke-width="8" stroke-linecap="round"/>
+
+  <!-- transparent bg; this SVG is meant as a backdrop texture -->
+</svg>
