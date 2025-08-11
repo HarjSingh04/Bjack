@@ -257,3 +257,48 @@ button.dimmed{opacity:.4;pointer-events:none}
   .seat .payout{ transform: translate(-50%,-50%) scale(.85); }
   .seat .payout.show{ transform: translate(-50%,-50%) scale(1); }
 }
+/* === Interactive Action Buttons === */
+#actionButtons{ gap:12px; flex-wrap:wrap }
+
+.btn{
+  --bg:#1e3a4a; --glow:#40e0d0; --txt:#e7fbff;
+  position:relative; border:none; color:var(--txt);
+  background: linear-gradient(180deg, #1a3140, var(--bg));
+  padding:10px 16px; border-radius:12px; font-weight:900; letter-spacing:.2px;
+  box-shadow: 0 4px 0 #0a2230, 0 0 0 1px #0b2c3a inset, 0 12px 24px rgba(0,0,0,.25);
+  transform: translateY(0); transition: transform .08s ease, box-shadow .12s ease, filter .12s ease;
+}
+.btn:hover:not(.dimmed){ transform: translateY(-2px); filter: brightness(1.08) }
+.btn:active:not(.dimmed){ transform: translateY(1px); box-shadow: 0 2px 0 #092030, 0 0 0 1px #0b2c3a inset }
+
+.btn.dimmed, .btn:disabled{
+  opacity:.45; cursor:not-allowed; filter: grayscale(.15);
+  box-shadow: 0 2px 0 #091b26, 0 0 0 1px #0b2c3a inset;
+}
+
+/* colorways */
+.btn.primary{ --bg:#134b4a;   --glow:#28e0c0 }
+.btn.accent { --bg:#193f6a;   --glow:#62b0ff }   /* Hit */
+.btn.safe   { --bg:#1b4d2e;   --glow:#74e39a }   /* Stand */
+.btn.gold   { --bg:#5a4616;   --glow:#ffd56a }   /* Double */
+.btn.violet { --bg:#3a235a;   --glow:#c39bff }   /* Split */
+
+/* subtle outer glow when enabled */
+.btn:not(.dimmed)::after{
+  content:''; position:absolute; inset:-2px; border-radius:14px;
+  box-shadow: 0 0 0 0 rgba(64,224,208,.65), 0 0 24px 6px color-mix(in oklab, var(--glow), transparent 45%);
+  opacity:.9; pointer-events:none; transition: opacity .15s ease;
+}
+.btn.dimmed::after{ opacity:0 }
+
+/* Deal pulse when ready */
+@keyframes pulse {
+  0%,100% { box-shadow:0 0 0 0 rgba(40,224,192,.45), 0 0 18px 6px rgba(40,224,192,.25) }
+  50%     { box-shadow:0 0 0 4px rgba(40,224,192,.00), 0 0 26px 10px rgba(40,224,192,.35) }
+}
+.btn.primary.ready:not(.dimmed){ animation: pulse 1.6s ease-in-out infinite }
+
+/* compact on mobile */
+@media (max-width:600px){
+  .btn{ padding:9px 12px; border-radius:10px }
+}
