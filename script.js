@@ -527,16 +527,40 @@ async function dealerPlayAndSettleAll(){
 
   const d = Number(total(dealer));
   const bubblePlans = [];
-  for (let i=0;i<activeSeatsCount;i++){
-    const bet=handBets[i]; if (bet<=0) continue;
-    const dbl=doubled[i], p=Number(total(hands[i]));
-    if (p>21){ bubblePlans.push({seat:i, text:`– $${bet*(dbl?2:1)}`, cls:'lose'}); }
-    else if (d>21){ playerBank += bet*(dbl?4:2); bubblePlans.push({seat:i, text:`+ $${bet*(dbl?2:1)}`, cls:'win'}); }
-    else if (p>d){  playerBank += bet*(dbl?4:2); bubblePlans.push({seat:i, text:`+ $${bet*(dbl?2:1)}`, cls:'win'}); }
-    else if (p===d){ playerBank += bet*(dbl?2:1); bubblePlans.push({seat:i, text:`Push`, cls:'push'}); }
-    else { bubblePlans.push({seat:i, text:`– $${bet*(dbl?2:1)}`, cls:'lose'}); }
+ // --- Settle each seat (hardened) ---
+const dRaw = Number(total(dealer));
+const d = Number.isFinite(dRaw) ? dRaw : 0;
+
+const bubblePlans = [];
+for (let i = 0; i < activeSeatsCount; i++) {
+  const bet = handBets[i];
+  if (!bet || bet <= 0) continue;
+
+  const pRaw = Number(total(hands[i]));
+  const p = Number.isFinite(pRaw) ? pRaw : 0;
+  const dbl = !!doubled[i];
+
+  let plan; // {seat,i,text,cls}
+  if (p > 21) {
+    plan = { seat:i, text:`– $${bet * (dbl?2:1)}`, cls:'lose' };
+  } else if (d > 21) {
+    playerBank += bet * (dbl?4:2);
+    plan = { seat:i, text:`+ $${bet * (dbl?2:1)}`, cls:'win' };
+  } else if (p > d) {
+    playerBank += bet * (dbl?4:2);
+    plan = { seat:i, text:`+ $${bet * (dbl?2:1)}`, cls:'win' };
+  } else if (p === d) {
+    // Push ALWAYS returns the stake (and double returns the doubled stake)
+    playerBank += bet * (dbl?2:1);
+    plan = { seat:i, text:`Push`, cls:'push' };
+  } else {
+    plan = { seat:i, text:`– $${bet * (dbl?2:1)}`, cls:'lose' };
   }
-  renderBank();
+
+  bubblePlans.push(plan);
+}
+renderBank();
+
 
   await showPayoutBubbles(bubblePlans);
   await endRoundFadeAndReset();
