@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 520" width="420" height="520">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c9fbf"/>
+      <stop offset="1" stop-color="#0e2c3f"/>
+    </linearGradient>
+    <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd6bf"/>
+      <stop offset="1" stop-color="#f1b79e"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="5%" r="80%">
+      <stop offset="0" stop-color="#79e1f7" stop-opacity=".7"/>
+      <stop offset="1" stop-color="#79e1f7" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="bust">
+      <path d="M90 220h240v210H90z" />
+    </clipPath>
+  </defs>
+
+  <!-- soft halo -->
+  <ellipse cx="210" cy="78" rx="180" ry="42" fill="url(#glow)"/>
+
+  <!-- shoulder silhouette -->
+  <path d="M60 420c22-58 82-88 150-88s128 30 150 88v18H60z" fill="#0f2b3d" opacity=".8"/>
+
+  <!-- jacket -->
+  <path d="M105 265c35-12 70-18 105-18s70 6 105 18v160H105z" fill="#0b1f2e"/>
+  <path d="M205 247h10v178h-10z" fill="#e6edf2" opacity=".9"/>
+  <path d="M155 260c18-6 37-9 55-9s37 3 55 9l-20 30h-70z" fill="#17374d"/>
+
+  <!-- shirt / bow -->
+  <rect x="175" y="250" width="70" height="120" rx="10" fill="#e6edf2"/>
+  <circle cx="210" cy="285" r="10" fill="#17374d"/>
+  <rect x="190" y="294" width="40" height="8" rx="4" fill="#17374d"/>
+
+  <!-- arms (clipped) -->
+  <g clip-path="url(#bust)">
+    <path d="M110 330c30 10 60 16 100 16s70-6 100-16v70H110z" fill="url(#g1)" opacity=".25"/>
+  </g>
+
+  <!-- head -->
+  <circle cx="210" cy="215" r="54" fill="url(#skin)"/>
+  <!-- hair -->
+  <path d="M156 216c6-40 34-66 76-66 32 0 60 20 70 52-6 26-22 42-48 46 2-20-8-32-26-32-18 0-28 12-26 32-26-4-42-20-46-32z"
+        fill="#132b3b"/>
+
+  <!-- cards in hand -->
+  <g transform="translate(125,360)">
+    <rect x="0" y="0" width="72" height="96" rx="10" fill="#fff" stroke="#e5e8ee"/>
+    <text x="10" y="20" font-family="system-ui,Segoe UI,Roboto" font-size="16" font-weight="900" fill="#c83a46">A</text>
+    <text x="50" y="84" font-family="system-ui,Segoe UI,Roboto" font-size="16" font-weight="900" fill="#c83a46">♥</text>
+  </g>
+  <g transform="translate(160,348) rotate(-10)">
+    <rect x="0" y="0" width="72" height="96" rx="10" fill="#fff" stroke="#e5e8ee"/>
+    <text x="10" y="20" font-family="system-ui,Segoe UI,Roboto" font-size="16" font-weight="900" fill="#1a2b3a">K</text>
+    <text x="50" y="84" font-family="system-ui,Segoe UI,Roboto" font-size="16" font-weight="900" fill="#1a2b3a">♣</text>
+  </g>
+
+  <!-- transparent background -->
+</svg>
