@@ -1,582 +1,463 @@
-/* HS Blackjack — stable split/bust/payout + mobile-ready */
-var BUILD = 'stable-2025-08-11-split2';
-var DEBUG_FORCE = false;
+/* HS Blackjack — stable multi-seat build
+   - 1–3 seats (centered solo)
+   - chips -> bets, Rebet
+   - Deal/Hit/Stand/Double/Split
+   - slow deal
+   - skip dealer if all bust
+   - hardened settle (proper pushes)
+   - Split uses extra seat (max 3)
+   - interactive buttons + hotkeys
+*/
 
-/* ===== pacing ===== */
-const DEAL_MS = 380;    // slow deal pacing
-const BUBBLE_MS = 1100; // payout bubble time
+/* =============== DOM helpers =============== */
+const $  = (sel, root=document) => root.querySelector(sel);
+const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
 
-// cache-buster (?fresh=1)
-(function freshLoader(){
-  try{
-    const q = new URLSearchParams(location.search);
-    if (q.has('fresh')) {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
-      }
-      if ('caches' in window) {
-        caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
-      }
-      q.delete('fresh');
-      setTimeout(() => location.replace(location.pathname + (q.toString()?('?'+q):'')), 40);
-    }
-  }catch(e){}
-})();
+/* =============== DOM refs =============== */
+const dealerCardsEl = $('#dealerCards');
+const dealerTotalEl = $('#dealerTotal');
+const bankEl        = $('#playerBank');
 
-/* ------------ helpers ------------ */
-const $  = s => document.querySelector(s);
-const $$ = s => Array.from(document.querySelectorAll(s));
-const byId = id => document.getElementById(id);
-const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-function isTenVal(r){ return r==='10'||r==='J'||r==='Q'||r==='K'; }
+const seatsArea     = $('#seatsArea');
+const seatRoots     = $$('.seat');
+const handEls       = [$('#hand1'), $('#hand2'), $('#hand3')];
+const totalEls      = [$('#total1'), $('#total2'), $('#total3')];
+const betPills      = seatRoots.map(r => r.querySelector('.bet'));
+const stacks        = seatRoots.map(r => r.querySelector('.bet-stack'));
 
-/* ------------ state ------------ */
-let playerBank = 1000;
-let activeSeatsCount = 1;
-let stagedBets = [0,0,0];
+const dealBtn    = $('#dealBtn');
+const rebetBtn   = $('#rebetBtn');
+const hitBtn     = $('#hitBtn');
+const standBtn   = $('#standBtn');
+const doubleBtn  = $('#doubleBtn');
+const splitBtn   = $('#splitBtn');
 
-let dealer = [];
-let hands  = [[],[],[]];
-let handBets = [0,0,0];
-let doubled  = [false,false,false];
-let finished = [false,false,false];
-let activeSeat = 0;
-let inRound = false;
+const chipBtns   = $$('#chipsArea .chip-img');
+const seatTogBtns= $$('#seatToggle button');
 
-// insurance (single-seat UI)
-let insuranceWager = 0;
-let allowInsurance = true;
+const insBar = $('#insuranceBar'); // stays hidden unless you wire insurance later
+const insYes = $('#insYes');
+const insNo  = $('#insNo');
 
-let lastStagedBets = [0,0,0];
+/* =============== Config =============== */
+const DECKS         = 6;
+const DEAL_MS       = 260;   // card pace
+const END_FADE_MS   = 420;
+const MAX_SEATS     = 3;
 
+/* =============== State =============== */
 const SUITS = ['♠','♥','♦','♣'];
 const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-let decks = 6, shoe = [], cutIndex = 0;
 
-/* ------------ DOM refs ------------ */
-let seats = [];
-function cacheDom(){
-  seats = $$('.seat').map(seat => ({
-    root: seat,
-    bet: seat.querySelector('.bet'),
-    stack: seat.querySelector('.bet-stack'),
-  }));
-}
-function ensureSeat1Active(){
-  seats.forEach(s => s.root.classList.remove('active'));
-  if (seats[0]) seats[0].root.classList.add('active');
-}
-function applySeatLayout(){
-  const area = byId('seatsArea');
-  if (!area) return;
-  area.classList.remove('solo','duo','trio','arc');
-  area.classList.add('arc', activeSeatsCount===1?'solo':activeSeatsCount===2?'duo':'trio');
+let shoe = [];
+let discard = [];
 
-  for (let i=0;i<3;i++){
-    const on = i < activeSeatsCount;
-    if (!seats[i]) continue;
-    seats[i].root.style.visibility = on ? 'visible' : 'hidden';
-    if (!on){
-      handContainer(i)?.replaceChildren();
-      totalContainer(i)?.replaceChildren();
-      if (seats[i].stack) seats[i].stack.innerHTML='';
-      stagedBets[i]=0; if (seats[i].bet) seats[i].bet.textContent='$0';
+let inRound = false;
+let activeSeatsCount = 1;
+let activeSeat = 0;
+
+let hands   = [[],[],[]];
+let dealer  = [];
+let finished= [false,false,false];
+let doubled = [false,false,false];
+
+let handBets = [0,0,0];     // live bets (before deal) / stakes (after deal)
+let lastBets = [0,0,0];     // last round for Rebet
+let playerBank = 1000;
+
+/* =============== Shoe / totals =============== */
+function freshDeck(){
+  const d = [];
+  for (const s of SUITS){
+    for (const r of RANKS){
+      for (let i=0;i<DECKS;i++) d.push({r,s,hidden:false});
     }
   }
+  for (let i=d.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [d[i],d[j]] = [d[j],d[i]];
+  }
+  return d;
 }
-const handContainer  = i => byId('hand'+(i+1));
-const totalContainer = i => byId('total'+(i+1));
-
-/* ------------ boot ------------ */
-document.addEventListener('DOMContentLoaded', () => {
-  const badge = byId('buildBadge'); if (badge) badge.textContent = `HS Blackjack • ${BUILD}`;
-  cacheDom();
-  ensureSeat1Active();
-  applySeatLayout();
-  renderBank();
-  initChips();
-  initActions();
-  initSeatToggle();
-  initProfilePanel();
-  initInsuranceHandlers();
-  updateRebetButton();
-});
-
-/* ------------ chips + stacks ------------ */
-function stagedSum(){ return (stagedBets[0]||0)+(stagedBets[1]||0)+(stagedBets[2]||0); }
-
-function initChips(){
-  // chip taps (pre-round only)
-  $$('#chipsArea .chip-img').forEach(chip => {
-    chip.addEventListener('click', () => {
-      if (inRound) return;
-      const val = parseInt(chip.getAttribute('data-value'),10);
-      let idx = seats.findIndex(s => s.root.classList.contains('active'));
-      if (idx<0) idx=0;
-      if (idx>=activeSeatsCount) return;
-      if (stagedSum() + val > playerBank) {
-        const tray = byId('chipsArea'); tray?.classList.add('shake');
-        setTimeout(()=> tray?.classList.remove('shake'), 250);
-        return;
-      }
-      stagedBets[idx]+=val;
-      seats[idx].bet && (seats[idx].bet.textContent = '$'+stagedBets[idx]);
-      addChipToken(idx,val);
-      updateRebetButtonPreview();
-    });
-  });
-
-  // seat clicks (and bet-box) to select active seat
-  seats.forEach((s, idx) => {
-    s.root.addEventListener('click', (e) => {
-      if (inRound) return;
-      if (idx>=activeSeatsCount) return;
-      if (e.target.closest('button')) return;
-      seats.forEach(t => t.root.classList.remove('active'));
-      s.root.classList.add('active');
-    });
-    const box = s.root.querySelector('.bet-box');
-    if (box){
-      box.addEventListener('click', (e)=>{
-        if (inRound) return;
-        e.stopPropagation();
-        seats.forEach(t => t.root.classList.remove('active'));
-        s.root.classList.add('active');
-      });
-    }
-
-    // remove last chip on bet label click
-    s.bet?.addEventListener('click', ()=>{
-      if (inRound || idx>=activeSeatsCount) return;
-      const removed = removeLastChipToken(idx);
-      if (removed>0){
-        stagedBets[idx] = Math.max(0, stagedBets[idx]-removed);
-        s.bet.textContent = '$'+stagedBets[idx];
-        updateRebetButtonPreview();
-      }
-    });
-  });
-}
-
-function addChipToken(i, value){
-  const stack = seats[i]?.stack; if (!stack) return;
-  const t = document.createElement('div');
-  t.className = 'chip-token v'+value;
-  t.innerHTML = '<span>$'+value+'</span>';
-  const n = stack.children.length, x=(-4+(n%3)*4), y=n*6;
-  t.style.transform = `translate(${x}px, ${12-y}px) scale(.8)`;
-  t.style.zIndex = String(100+n);
-  stack.appendChild(t);
-  requestAnimationFrame(()=>{
-    t.classList.add('in');
-    t.style.transform = `translate(${x}px, ${-y}px) scale(1)`;
-  });
-}
-function removeLastChipToken(i){
-  const stack = seats[i]?.stack;
-  const last = stack ? stack.lastElementChild : null;
-  if (!last) return 0;
-  const m = last.className.match(/v(\d+)/); const val = m?parseInt(m[1],10):0;
-  last.classList.remove('in'); last.style.opacity='0';
-  setTimeout(()=> last.remove(), 140);
-  return val;
-}
-function setBetLabel(i, amt){
-  const s = seats[i]; if (!s || !s.bet) return;
-  s.bet.textContent = '$' + (amt||0);
-}
-function rebuildStacksFromBets(){
-  for (let i = 0; i < activeSeatsCount; i++){
-    const s = seats[i]; if (!s || !s.stack) continue;
-    s.stack.innerHTML = '';
-    let r = handBets[i] || 0;
-    const pushMany = (v, cls) => { while (r >= v){ 
-      const t = document.createElement('div');
-      t.className = `chip-token ${cls} in locked`;
-      t.innerHTML = `<span>$${v}</span>`;
-      const n = s.stack.children.length, x=(-4+(n%3)*4), y=n*6;
-      t.style.transform = `translate(${x}px, ${-y}px) scale(1)`;
-      t.style.zIndex = String(100+n);
-      s.stack.appendChild(t);
-      r -= v;
-    }};
-    pushMany(100,'v100'); pushMany(50,'v50'); pushMany(20,'v20'); pushMany(5,'v5');
+function ensureShoe(){
+  if (shoe.length < 52) {
+    shoe = freshDeck();
+    discard.length = 0;
   }
 }
-function lockStacks(){
-  seats.slice(0,activeSeatsCount).forEach(s=>{
-    if(!s.stack) return;
-    Array.from(s.stack.children).forEach(el=>el.classList.add('locked'));
-  });
+function draw(){
+  ensureShoe();
+  return shoe.pop();
 }
-function clearStacksAndBets(){
-  stagedBets = [0,0,0];
-  seats.forEach(s=>{ s.bet && (s.bet.textContent='$0'); s.stack && (s.stack.innerHTML=''); });
-}
-
-/* ------------ actions ------------ */
-function initActions(){
-  byId('dealBtn')?.addEventListener('click', startRound);
-  byId('rebetBtn')?.addEventListener('click', doRebet);
-  byId('hitBtn')?.addEventListener('click', doHit);
-  byId('standBtn')?.addEventListener('click', doStand);
-  byId('doubleBtn')?.addEventListener('click', doDouble);
-  byId('splitBtn')?.addEventListener('click', doSplit);
-}
-function setBtn(sel,on){ const b=$(sel); if(!b) return; b.disabled=!on; b.classList.toggle('dimmed', !on); }
-function setButtons(h,s,d,sp){ setBtn('#hitBtn',h); setBtn('#standBtn',s); setBtn('#doubleBtn',d); setBtn('#splitBtn',sp); }
-function updateRebetButton(){
-  const btn = byId('rebetBtn'); if(!btn) return;
-  const need = (lastStagedBets[0]||0) + (lastStagedBets[1]||0) + (lastStagedBets[2]||0);
-  const enough = playerBank >= need && need>0 && !inRound;
-  btn.disabled = !enough; btn.classList.toggle('dimmed', !enough);
-}
-function updateRebetButtonPreview(){
-  const btn = byId('rebetBtn'); if(!btn) return;
-  const need = (stagedBets[0]||0) + (stagedBets[1]||0) + (stagedBets[2]||0);
-  btn.disabled = need===0 || inRound;
-  btn.classList.toggle('dimmed', btn.disabled);
-}
-
-/* ------------ shoe + rules ------------ */
-function newShoe(n){
-  const s=[];
-  for(let i=0;i<n;i++) for(const su of SUITS) for(const r of RANKS) s.push({rank:r,suit:su,hidden:false});
-  for(let i=s.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=s[i]; s[i]=s[j]; s[j]=t; }
-  cutIndex = Math.floor(s.length*0.2);
-  return s;
-}
-function ensureShoe(){ if(!shoe.length || shoe.length<=cutIndex) shoe = newShoe(decks); }
-function draw(){ ensureShoe(); return shoe.pop(); }
-
-function val(r){ if(r==='A')return 11; if(r==='K'||r==='Q'||r==='J')return 10; return parseInt(r,10); }
-function total(cards){
+function cardVal(c){ if(c.r==='A')return 11; if(['K','Q','J'].includes(c.r))return 10; return Number(c.r); }
+function total(hand){
   let t=0,a=0;
-  for(const c of cards){ if(c.hidden) continue; t+=val(c.rank); if(c.rank==='A') a++; }
-  while(t>21 && a>0){ t-=10; a--; }
-  return t||'';
-}
-function isBJ(cards){
-  const open = cards.filter(c=>!c.hidden);
-  return open.length===2 && total(cards)===21;
-}
-function isSoft(cards){
-  let t=0,a=0;
-  for(const c of cards){ if(c.hidden) continue; t+=val(c.rank); if(c.rank==='A') a++; }
-  while(t>21 && a>0){ t-=10; a--;
+  for (const c of hand){
+    if (c.hidden) continue;
+    if (c.r==='A'){ t+=11; a++; } else t+=cardVal(c);
   }
-  return a>0 && t<=21;
+  while (t>21 && a>0){ t-=10; a--; }
+  return t;
 }
-function canDouble(i){
-  const h = hands[i]; if(h.length!==2) return false;
-  const t = Number(total(h)); if(Number.isNaN(t)) return false;
-  return (t===9 || t===10 || t===11) && playerBank>=handBets[i];
-}
-function canSplit(i){
-  const h = hands[i];
-  if (!h || h.length !== 2) return false;
-  const a = h[0].rank, b = h[1].rank;
-  const isPair = a === b || (isTenVal(a) && isTenVal(b));
-  const hasSeatRoom = activeSeatsCount < 3;
-  const canAfford = playerBank >= handBets[i];
-  return isPair && hasSeatRoom && canAfford && inRound && !finished[i];
-}
+function isBlackjack(hand){ return hand.length===2 && total(hand)===21; }
+function tenish(r){ return r==='10'||r==='J'||r==='Q'||r==='K'; }
+function canRanksSplit(h){ return h.length===2 && (h[0].r===h[1].r || (tenish(h[0].r)&&tenish(h[1].r))); }
 
-/* ------------ bank ui ------------ */
-function renderBank(){ byId('playerBank').textContent = '$'+playerBank; }
+/* =============== Rendering =============== */
+function renderBank(){ bankEl.textContent = `$${playerBank}`; }
 
-/* ------------ render ------------ */
-function putCard(container, card, slow=false){
-  if(!container) return;
-  const c = document.createElement('div');
-  const red = (card.suit==='♥'||card.suit==='♦')?' red':'';
-  if(card.hidden){ c.className='card back'; c.textContent='🂠'; }
-  else{ c.className='card'+red; c.innerHTML = `<span class="small">${card.rank}</span><span class="big">${card.rank}</span><span class="suit">${card.suit}</span>`; }
-  if (slow){ c.classList.add('deal-slow'); }
-  container.appendChild(c);
-  if (slow){ requestAnimationFrame(()=> c.classList.add('show')); }
+function cardNode(c){
+  const div = document.createElement('div');
+  div.className = 'card deal-slow';
+  if (c.hidden){
+    div.classList.add('back');
+    div.innerHTML = `<div class="big">🂠</div>`;
+    return div;
+  }
+  const red = (c.s==='♥'||c.s==='♦');
+  if (red) div.classList.add('red');
+  div.innerHTML = `
+    <div class="small">${c.r}</div>
+    <div class="big">${c.r}</div>
+    <div class="suit">${c.s}</div>
+  `;
+  return div;
+}
+function clearNode(n){ while(n && n.firstChild) n.removeChild(n.firstChild); }
+
+function renderDealer(){
+  clearNode(dealerCardsEl);
+  for (const c of dealer){
+    const n = cardNode(c);
+    dealerCardsEl.appendChild(n);
+    requestAnimationFrame(()=> n.classList.add('show'));
+  }
+  dealerTotalEl.textContent = dealer.some(c=>c.hidden) ? '' : (total(dealer)||'');
+}
+function renderSeat(i){
+  const hand = hands[i]; const el = handEls[i];
+  clearNode(el);
+  for (const c of hand){
+    const n = cardNode(c);
+    el.appendChild(n);
+    requestAnimationFrame(()=> n.classList.add('show'));
+  }
+  totalEls[i].textContent = (total(hand) || '');
+  // update bet label (even if hidden by CSS)
+  if (betPills[i]) betPills[i].textContent = `$${handBets[i]||0}`;
 }
 function renderAll(){
-  // dealer
-  const dcon = byId('dealerCards'); if (dcon){ dcon.innerHTML=''; for(const cd of dealer) putCard(dcon, cd); }
-  if (byId('dealerTotal')) byId('dealerTotal').textContent = total(dealer);
-
-  // players
-  for(let s=0;s<activeSeatsCount;s++){
-    const con = handContainer(s); if(con){ con.innerHTML=''; for(const cd of hands[s]) putCard(con, cd); }
-    const tcon = totalContainer(s); if(tcon) tcon.textContent = total(hands[s]);
-    const root = seats[s]?.root;
-    if(root){
-      root.classList.remove('tight','tighter');
-      const n = hands[s].length;
-      if (n>=5 && n<=6) root.classList.add('tight');
-      if (n>=7) root.classList.add('tighter');
-    }
-  }
-  seats.forEach((s,idx)=> s?.root.classList.toggle('active', idx===activeSeat && inRound));
+  renderDealer();
+  for (let i=0;i<MAX_SEATS;i++) renderSeat(i);
   updateButtonsForState();
 }
 
-/* ------------ insurance bar ------------ */
-function initInsuranceHandlers(){
-  byId('insYes')?.addEventListener('click', ()=>{
-    if (activeSeatsCount!==1) { hideInsuranceBar(); return; }
-    const half = Math.floor(handBets[0]/2);
-    if (playerBank >= half) { insuranceWager = half; playerBank -= half; renderBank(); }
-    hideInsuranceBar();
-  });
-  byId('insNo')?.addEventListener('click', hideInsuranceBar);
-}
-function showInsuranceBar(){
-  if (!allowInsurance) return;
-  if (activeSeatsCount!==1) return;
-  byId('insuranceBar')?.classList.add('show');
-}
-function hideInsuranceBar(){ byId('insuranceBar')?.classList.remove('show'); insuranceWager=0; }
-
-/* ------------ seat turn helpers ------------ */
-function allSeatsFinished(){
-  for (let i = 0; i < activeSeatsCount; i++){
-    if (!finished[i]) return false;
+/* =============== Chips / bets UI =============== */
+function rebuildStacksFromBets(){
+  for (let i=0;i<activeSeatsCount;i++){
+    const s = stacks[i]; if (!s) continue;
+    s.innerHTML = '';
+    let r = handBets[i] || 0;
+    const pushMany = (v, cls)=>{
+      while (r >= v){
+        const t = document.createElement('div');
+        t.className = `chip-token ${cls} in locked`;
+        t.innerHTML = `<span>$${v}</span>`;
+        const n = s.children.length, x=(-4+(n%3)*4), y=n*6;
+        t.style.transform = `translate(${x}px, ${-y}px) scale(1)`;
+        t.style.zIndex = String(100+n);
+        s.appendChild(t);
+        r -= v;
+      }
+    };
+    pushMany(100,'v100'); pushMany(50,'v50'); pushMany(20,'v20'); pushMany(5,'v5');
   }
-  return true;
+}
+function addToBet(i, amount){
+  // guard: cannot stage more than bank
+  const want = handBets.slice(0,activeSeatsCount).reduce((a,b)=>a+b,0) + amount;
+  if (want > playerBank) {
+    // tray shake handled by CSS; nothing else to do
+    const tray = $('#chipsArea'); tray?.classList.add('shake');
+    setTimeout(()=> tray?.classList.remove('shake'), 250);
+    return;
+  }
+  handBets[i] += amount;
+  if (betPills[i]) betPills[i].textContent = `$${handBets[i]}`;
+  // add one token visually
+  const s = stacks[i];
+  if (s){
+    const t = document.createElement('div');
+    t.className = `chip-token v${amount}`;
+    t.innerHTML = `<span>$${amount}</span>`;
+    const n = s.children.length, x=(-4+(n%3)*4), y=n*6;
+    t.style.transform = `translate(${x}px, ${12-y}px) scale(.8)`;
+    t.style.zIndex = String(100+n);
+    s.appendChild(t);
+    requestAnimationFrame(()=>{
+      t.classList.add('in');
+      t.style.transform = `translate(${x}px, ${-y}px) scale(1)`;
+      t.classList.add('locked');
+    });
+  }
+  updateButtonsForState();
+}
+
+/* =============== Buttons: enable/disable + style sync =============== */
+function updateButtonsForState(){
+  const anyStaged = handBets.slice(0,activeSeatsCount).some(v=>v>0);
+  dealBtn.disabled  = inRound || !anyStaged;
+  rebetBtn.disabled = inRound || !lastBets.slice(0,activeSeatsCount).some(v=>v>0);
+
+  const h = hands[activeSeat] || [];
+  const canHit    = inRound && !finished[activeSeat] && total(h) < 21;
+  const canStand  = inRound && !finished[activeSeat];
+  const canDouble = inRound && !finished[activeSeat] && h.length===2 && playerBank>=handBets[activeSeat];
+  const canSplit  = inRound && !finished[activeSeat] && h.length===2 && canRanksSplit(h) && activeSeatsCount<3 && playerBank>=handBets[activeSeat];
+
+  hitBtn.disabled    = !canHit;
+  standBtn.disabled  = !canStand;
+  doubleBtn.disabled = !canDouble;
+  splitBtn.disabled  = !canSplit;
+
+  syncActionStyles();
+}
+function syncActionStyles(){
+  ['dealBtn','rebetBtn','hitBtn','standBtn','doubleBtn','splitBtn'].forEach(id=>{
+    const b = document.getElementById(id);
+    if (b) b.classList.toggle('dimmed', b.disabled);
+  });
+  const shouldPulse = !dealBtn.disabled && !inRound;
+  dealBtn.classList.toggle('ready', shouldPulse);
+}
+
+/* Hotkeys */
+(function hotkeys(){
+  window.addEventListener('keydown', (e)=>{
+    if (e.repeat) return;
+    const key = e.key.toLowerCase();
+    const clickIf = id=>{
+      const el = document.getElementById(id);
+      if (el && !el.disabled){ el.click(); e.preventDefault(); }
+    };
+    if (key===' ' || key==='enter'){ const pref = !rebetBtn.disabled ? 'rebetBtn':'dealBtn'; clickIf(pref); return; }
+    if (key==='h') clickIf('hitBtn');
+    if (key==='s') clickIf('standBtn');
+    if (key==='d') clickIf('doubleBtn');
+    if (key==='p') clickIf('splitBtn');
+    if (key==='r') clickIf('rebetBtn');
+  }, false);
+})();
+
+/* =============== Dealing / animations =============== */
+async function slowRenderAll(){
+  renderDealer();
+  for (let i=0;i<activeSeatsCount;i++){
+    renderSeat(i);
+  }
+  await sleep(DEAL_MS);
+}
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+
+/* =============== Round flow =============== */
+function stageTotal() {
+  return handBets.slice(0,activeSeatsCount).reduce((a,b)=>a+b,0);
+}
+async function onDeal(){
+  if (inRound) return;
+  const need = stageTotal();
+  if (need<=0 || need>playerBank) return;
+
+  // lock in: take money and save lastBets for Rebet
+  lastBets = handBets.slice(0,activeSeatsCount);
+  playerBank -= need; renderBank();
+  inRound = true; finished=[false,false,false]; doubled=[false,false,false];
+  dealer = []; hands=[[],[],[]]; activeSeat = 0;
+
+  // Reset UI areas
+  clearNode(dealerCardsEl); dealerTotalEl.textContent = '';
+  for (let i=0;i<activeSeatsCount;i++){
+    clearNode(handEls[i]); totalEls[i].textContent='';
+  }
+
+  // Deal sequence: P1..Pn (first), Dealer upcard, P1..Pn (second)
+  for (let i=0;i<activeSeatsCount;i++){ const c=draw(); c.hidden=false; hands[i].push(c); await slowRenderAll(); }
+  const up = draw(); up.hidden=false; dealer.push(up); await slowRenderAll();
+  for (let i=0;i<activeSeatsCount;i++){ const c=draw(); c.hidden=false; hands[i].push(c); await slowRenderAll(); }
+
+  updateButtonsForState();
+}
+async function onHit(){
+  if (!inRound || finished[activeSeat]) return;
+  const h = hands[activeSeat]; if (total(h)>=21) return;
+  const c = draw(); c.hidden=false; h.push(c);
+  await slowRenderAll();
+  const t = total(h);
+  if (t>=21){ finished[activeSeat]=true; advanceSeatOrDealer(); }
+  else updateButtonsForState();
+}
+async function onStand(){
+  if (!inRound || finished[activeSeat]) return;
+  finished[activeSeat]=true;
+  advanceSeatOrDealer();
+}
+async function onDouble(){
+  if (!inRound || finished[activeSeat]) return;
+  const bet = handBets[activeSeat];
+  if (hands[activeSeat].length!==2 || playerBank<bet) return;
+  playerBank -= bet; handBets[activeSeat]+=bet; renderBank(); rebuildStacksFromBets();
+  doubled[activeSeat]=true;
+
+  const c = draw(); c.hidden=false; hands[activeSeat].push(c);
+  await slowRenderAll();
+  finished[activeSeat]=true;
+  advanceSeatOrDealer();
+}
+async function onSplit(){
+  if (!inRound || finished[activeSeat]) return;
+  const h = hands[activeSeat];
+  if (!(h.length===2 && canRanksSplit(h))) return;
+  if (activeSeatsCount>=3) return;
+  const stake = handBets[activeSeat];
+  if (playerBank < stake) return;
+
+  // Expand seats visually
+  activeSeatsCount = Math.min(3, activeSeatsCount+1);
+  applySeatLayout();
+
+  // Insert a new hand at right-adjacent slot
+  const insertAt = activeSeat + 1;
+  // shift right seat (if any) to seat 3
+  for (let i=activeSeatsCount-1; i>insertAt; i--){
+    hands[i]    = hands[i-1];
+    handBets[i] = handBets[i-1];
+    finished[i] = finished[i-1];
+    doubled[i]  = doubled[i-1];
+  }
+  // move one card to the new hand
+  const moved = h.pop();
+  hands[insertAt] = [ moved ];
+  finished[insertAt]=false; doubled[insertAt]=false;
+
+  // copy stake and deduct from bank
+  handBets[insertAt] = stake;
+  playerBank -= stake; renderBank();
+
+  // rebuild bet labels + chip stacks
+  for (let i=0;i<activeSeatsCount;i++){
+    if (betPills[i]) betPills[i].textContent = `$${handBets[i]||0}`;
+  }
+  rebuildStacksFromBets();
+
+  // Deal a card to each split hand
+  const c1 = draw(); c1.hidden=false; hands[activeSeat].push(c1);
+  await slowRenderAll();
+  const c2 = draw(); c2.hidden=false; hands[insertAt].push(c2);
+  await slowRenderAll();
+
+  updateButtonsForState();
+}
+
+/* =============== Turn progression =============== */
+function applySeatLayout(){
+  // seatsArea has classes solo/duo/trio (CSS does the grid)
+  seatsArea.classList.remove('solo','duo','trio','arc');
+  seatsArea.classList.add('arc', activeSeatsCount===1?'solo':activeSeatsCount===2?'duo':'trio');
+  // ensure hidden/visible as needed (you can leave all visible; here we keep simple)
+  for (let i=0;i<3;i++){
+    seatRoots[i].style.display = (i<activeSeatsCount) ? '' : 'none';
+  }
+}
+function nextUnfinishedSeat(fromIdx){
+  for (let i=fromIdx+1;i<activeSeatsCount;i++){
+    if (!finished[i]) return i;
+  }
+  return -1;
 }
 function allPlayersBustedOnly(){
-  for (let i = 0; i < activeSeatsCount; i++){
-    const t = Number(total(hands[i]));
-    if (t <= 21) return false;
+  for (let i=0;i<activeSeatsCount;i++){
+    if (total(hands[i]) <= 21) return false;
   }
   return true;
 }
 async function settleAllBustedImmediately(){
+  // show loss bubbles then reset (dealer does not draw)
   const plans = [];
-  for (let i = 0; i < activeSeatsCount; i++){
-    const bet = handBets[i] || 0; if (!bet) continue;
+  for (let i=0;i<activeSeatsCount;i++){
+    const bet = handBets[i]||0; if (!bet) continue;
     const dbl = !!doubled[i];
-    if (Number(total(hands[i])) > 21){
-      plans.push({ seat:i, text:`– $${bet * (dbl?2:1)}`, cls:'lose' });
+    if (total(hands[i])>21){
+      plans.push({seat:i, text:`– $${bet*(dbl?2:1)}`, cls:'lose'});
     }
   }
   await showPayoutBubbles(plans);
   await endRoundFadeAndReset();
 }
 function advanceSeatOrDealer(){
-  // next unfinished seat
-  for (let i = activeSeat + 1; i < activeSeatsCount; i++){
-    if (!finished[i]) { activeSeat = i; renderAll(); return; }
-  }
+  const nxt = nextUnfinishedSeat(activeSeat);
+  if (nxt>=0){ activeSeat = nxt; renderAll(); return; }
   // all seats done
   if (allPlayersBustedOnly()){
-    settleAllBustedImmediately();     // instant end; dealer does not play
+    settleAllBustedImmediately();
   } else {
-    dealerPlayAndSettleAll();         // normal dealer play
+    dealerPlayAndSettleAll();
   }
 }
 
-/* ------------ round flow ------------ */
-async function startRound(){
-  const need = stagedSum();
-  if (need <= 0 || need > playerBank) return;
-
-  inRound=true; setButtons(false,false,false,false); updateRebetButton();
-  lastStagedBets = stagedBets.slice();
-
-  dealer=[]; hands=[[],[],[]]; handBets=[0,0,0]; doubled=[false,false,false]; finished=[false,false,false]; activeSeat=0;
-
-  for(let s=0;s<activeSeatsCount;s++){ handBets[s]=stagedBets[s]; playerBank -= handBets[s]; }
-  renderBank(); lockStacks();
-
-  byId('dealerArea')?.classList.remove('fade-out');
-  $$('#seatsArea .seat').forEach(seat=> seat.classList.remove('fade-out'));
-
-  byId('dealerCards')?.replaceChildren(); if(byId('dealerTotal')) byId('dealerTotal').textContent='';
-  for(let i=0;i<activeSeatsCount;i++){ handContainer(i)?.replaceChildren(); totalContainer(i)?.replaceChildren(); }
-
-  if (DEBUG_FORCE){
-    for(let i=0;i<activeSeatsCount;i++){ hands[i].push({rank:'A',suit:'♠',hidden:false}); hands[i].push({rank:'9',suit:'♥',hidden:false}); }
-    dealer.push({rank:'6',suit:'♣',hidden:false});
-    await slowDealRender();
-  } else {
-    // Pass 1: all seats first card, then dealer upcard
-    for (let i=0;i<activeSeatsCount;i++){ const c=draw(); c.hidden=false; hands[i].push(c); await slowDealRender(); }
-    const du = draw(); du.hidden=false; dealer.push(du); await slowDealRender();
-    // Pass 2: all seats second card
-    for (let i=0;i<activeSeatsCount;i++){ const c=draw(); c.hidden=false; hands[i].push(c); await slowDealRender(); }
-  }
-
-  if (dealer[0] && dealer[0].rank==='A'){
-    const anyNonBJ = [...Array(activeSeatsCount)].some((_,i)=>!isBJ(hands[i]));
-    if (anyNonBJ) showInsuranceBar(); else hideInsuranceBar();
-  } else hideInsuranceBar();
-
-  // natural blackjacks 3:2 and finished
-  for (let i=0;i<activeSeatsCount;i++){
-    if (isBJ(hands[i])){ playerBank += Math.floor(handBets[i]*2.5); finished[i]=true; }
-  }
-  renderBank();
-
-  if (finished.slice(0,activeSeatsCount).every(v=>v)){ await endRoundFadeAndReset([]); return; }
-  activeSeat = 0; while (activeSeat<activeSeatsCount && finished[activeSeat]) activeSeat++; renderAll();
-}
-
-async function slowDealRender(){
-  const dcon = byId('dealerCards');
-  if (dcon){ dcon.innerHTML=''; for(const cd of dealer) putCard(dcon, cd, true); }
-  if (byId('dealerTotal')) byId('dealerTotal').textContent = total(dealer);
-
-  for (let s=0;s<activeSeatsCount;s++){
-    const con = handContainer(s); if(!con) continue;
-    con.innerHTML='';
-    for (const cd of hands[s]) putCard(con, cd, true);
-    const tcon = byId('total'+(s+1));
-    if (tcon) tcon.textContent = total(hands[s]);
-
-    const root = seats[s]?.root;
-    if(root){
-      root.classList.remove('tight','tighter');
-      const n = hands[s].length;
-      if (n>=5 && n<=6) root.classList.add('tight');
-      if (n>=7) root.classList.add('tighter');
-    }
-  }
-  seats.forEach((s,idx)=> s?.root.classList.toggle('active', idx===activeSeat && inRound));
-  await sleep(DEAL_MS);
-}
-
-/* player actions */
-async function doHit(){
-  if(!inRound || finished[activeSeat]) return;
-  const h = hands[activeSeat];
-  if (Number(total(h))>=21) return;
-  const c=draw(); c.hidden=false; h.push(c);
-  await slowDealRender();
-  const t=Number(total(h));
-  if (t>=21){ finished[activeSeat]=true; advanceSeatOrDealer(); } else updateButtonsForState();
-}
-async function doDouble(){
-  if(!inRound || finished[activeSeat]) return;
-  if(!canDouble(activeSeat)) return;
-  if(playerBank < handBets[activeSeat]) return;
-  playerBank -= handBets[activeSeat]; renderBank();
-  doubled[activeSeat]=true;
-  const c=draw(); c.hidden=false; hands[activeSeat].push(c);
-  await slowDealRender();
-  finished[activeSeat]=true; advanceSeatOrDealer();
-}
-async function doStand(){
-  if(!inRound || finished[activeSeat]) return;
-  finished[activeSeat]=true;
-  advanceSeatOrDealer();
-}
-
-/* split as new seat to the right */
-async function doSplit(){
-  if (!canSplit(activeSeat)) return;
-
-  const insertAt = activeSeat + 1;
-
-  activeSeatsCount = Math.min(3, activeSeatsCount + 1);
-  applySeatLayout();
-  cacheDom(); // refresh references (bet/stack)
-
-  // shift right seats to make room
-  for (let i = activeSeatsCount - 1; i > insertAt; i--){
-    hands[i]    = hands[i-1];
-    handBets[i] = handBets[i-1];
-    doubled[i]  = doubled[i-1];
-    finished[i] = finished[i-1];
-  }
-
-  // move card to new hand
-  const moved = hands[activeSeat].pop();
-  hands[insertAt] = [ moved ];
-  finished[insertAt] = false;
-  doubled[insertAt]  = false;
-
-  // copy bet and deduct from bank
-  const stake = handBets[activeSeat];
-  handBets[insertAt] = stake;
-  playerBank -= stake; renderBank();
-
-  // update labels/stacks for all seats
-  for (let i=0; i<activeSeatsCount; i++) setBetLabel(i, handBets[i]);
-  rebuildStacksFromBets();
-  lockStacks();
-
-  // deal one to each split hand
-  const c1 = draw(); c1.hidden=false; hands[activeSeat].push(c1);
-  await slowDealRender();
-  const c2 = draw(); c2.hidden=false; hands[insertAt].push(c2);
-  await slowDealRender();
-
-  updateButtonsForState();
-}
-
-/* ------------ dealer + settle ------------ */
+/* =============== Dealer play & settle =============== */
 async function dealerPlayAndSettleAll(){
-  hideInsuranceBar();
-
-  // reveal hole if needed
-  if (dealer.length === 1) {
-    const hole = draw(); hole.hidden = false; dealer.push(hole);
-    await slowDealRender();
+  // Reveal hole if only one card (we deal only upcard initially)
+  if (dealer.length===1){
+    const hole = draw(); hole.hidden=false; dealer.push(hole);
+    await slowRenderAll();
   }
-
-  // dealer draws to 17 (stand on all 17)
-  while (true) {
-    const t = Number(total(dealer));
-    if (t < 17) {
-      const c = draw(); c.hidden = false; dealer.push(c);
-      await slowDealRender();
+  // Draw to 17 (stand on all 17s for now)
+  while (true){
+    const t = total(dealer);
+    if (t<17){
+      const c = draw(); c.hidden=false; dealer.push(c);
+      await slowRenderAll();
     } else break;
   }
 
-  // insurance settle (single-seat)
-  if (activeSeatsCount === 1 && insuranceWager > 0) {
-    if (isBJ(dealer)) playerBank += insuranceWager * 3;
-    insuranceWager = 0;
-  }
-
-  // settle (hardened)
+  // Hardened settle loop
   const dRaw = Number(total(dealer));
   const d = Number.isFinite(dRaw) ? dRaw : 0;
 
-  const bubblePlans = [];
-  for (let i = 0; i < activeSeatsCount; i++) {
-    const bet = handBets[i];
-    if (!bet || bet <= 0) continue;
-
+  const plans = [];
+  for (let i=0;i<activeSeatsCount;i++){
+    const bet = handBets[i]; if (!bet || bet<=0) continue;
     const pRaw = Number(total(hands[i]));
     const p = Number.isFinite(pRaw) ? pRaw : 0;
     const dbl = !!doubled[i];
 
     let plan;
-    if (p > 21) {
-      plan = { seat:i, text:`– $${bet * (dbl ? 2 : 1)}`, cls:'lose' };
-    } else if (d > 21) {
-      playerBank += bet * (dbl ? 4 : 2);
-      plan = { seat:i, text:`+ $${bet * (dbl ? 2 : 1)}`, cls:'win' };
-    } else if (p > d) {
-      playerBank += bet * (dbl ? 4 : 2);
-      plan = { seat:i, text:`+ $${bet * (dbl ? 2 : 1)}`, cls:'win' };
-    } else if (p === d) {
-      playerBank += bet * (dbl ? 2 : 1);
+    if (p>21){
+      plan = { seat:i, text:`– $${bet*(dbl?2:1)}`, cls:'lose' };
+    } else if (d>21){
+      playerBank += bet*(dbl?4:2);
+      plan = { seat:i, text:`+ $${bet*(dbl?2:1)}`, cls:'win' };
+    } else if (p>d){
+      playerBank += bet*(dbl?4:2);
+      plan = { seat:i, text:`+ $${bet*(dbl?2:1)}`, cls:'win' };
+    } else if (p===d){
+      playerBank += bet*(dbl?2:1); // push returns stake (double returns doubled stake)
       plan = { seat:i, text:`Push`, cls:'push' };
     } else {
-      plan = { seat:i, text:`– $${bet * (dbl ? 2 : 1)}`, cls:'lose' };
+      plan = { seat:i, text:`– $${bet*(dbl?2:1)}`, cls:'lose' };
     }
-    bubblePlans.push(plan);
+    plans.push(plan);
   }
   renderBank();
 
-  await showPayoutBubbles(bubblePlans);
+  await showPayoutBubbles(plans);
   await endRoundFadeAndReset();
 }
 
-/* ===== payout bubbles ===== */
+/* =============== Bubbles & end reset =============== */
 async function showPayoutBubbles(plans){
   plans.forEach(p=>{
-    const seat = seats[p.seat]?.root; if(!seat) return;
+    const seat = seatRoots[p.seat];
     let div = seat.querySelector('.payout');
     if (!div){ div = document.createElement('div'); div.className='payout'; seat.appendChild(div); }
     div.textContent = p.text;
@@ -584,96 +465,113 @@ async function showPayoutBubbles(plans){
     div.classList.add(p.cls);
     requestAnimationFrame(()=> div.classList.add('show'));
   });
-  await sleep(BUBBLE_MS);
+  await sleep(1000);
   plans.forEach(p=>{
-    const seat = seats[p.seat]?.root; const div = seat?.querySelector('.payout');
-    if (div) div.classList.remove('show');
+    const seat = seatRoots[p.seat];
+    const div = seat.querySelector('.payout'); if (div) div.classList.remove('show');
   });
 }
-
-/* ------------ end round ------------ */
 async function endRoundFadeAndReset(){
-  byId('dealerArea')?.classList.add('fade-out');
-  $$('#seatsArea .seat').forEach(seat=> seat.classList.add('fade-out'));
-  await sleep(380);
+  // fade out visuals
+  $('#dealerArea')?.classList.add('fade-out');
+  seatRoots.forEach(s => s.classList.add('fade-out'));
+  await sleep(END_FADE_MS);
 
-  byId('dealerCards')?.replaceChildren(); byId('dealerTotal')?.replaceChildren?.();
-  for(let i=0;i<3;i++){
-    handContainer(i)?.replaceChildren();
-    totalContainer(i)?.replaceChildren?.();
-    const seat = seats[i]?.root;
-    const bubble = seat?.querySelector('.payout'); if (bubble) bubble.remove();
-  }
-  clearStacksAndBets();
+  // clear table
+  dealer = []; for (let i=0;i<MAX_SEATS;i++){ hands[i]=[]; finished[i]=false; doubled[i]=false; }
+  clearNode(dealerCardsEl); dealerTotalEl.textContent='';
+  handEls.forEach(el=> clearNode(el));
+  totalEls.forEach(el=> el.textContent='');
 
-  inRound=false;
-  setButtons(false,false,false,false);
-  updateRebetButton();
+  // reset staged bets UI (keep handBets as staged amount for next round? up to you)
+  // We'll keep current staged bets; Rebet uses lastBets.
+  inRound=false; activeSeat=0;
+  seatRoots.forEach(s => s.classList.remove('fade-out'));
+  $('#dealerArea')?.classList.remove('fade-out');
+
+  updateButtonsForState();
 }
 
-/* ------------ Rebet ------------ */
-function doRebet(){
+/* =============== Rebet =============== */
+function onRebet(){
   if (inRound) return;
-
-  const needed = (lastStagedBets[0]||0) + (lastStagedBets[1]||0) + (lastStagedBets[2]||0);
-  if (needed <= 0 || playerBank < needed) { updateRebetButton(); return; }
-
-  clearStacksAndBets();
-
+  if (!lastBets.slice(0,activeSeatsCount).some(v=>v>0)) return;
+  // clear current stacks
+  handBets = [0,0,0];
   for (let i=0;i<activeSeatsCount;i++){
-    const amt = lastStagedBets[i]||0;
-    if (amt<=0) continue;
-    stagedBets[i] = amt;
-    seats[i].bet && (seats[i].bet.textContent = '$'+amt);
-    let r = amt;
-    const pushMany = (v) => { while(r>=v){ addChipToken(i, v); r-=v; } };
-    pushMany(100); pushMany(50); pushMany(20); pushMany(5);
+    handBets[i] = lastBets[i]||0;
+    if (betPills[i]) betPills[i].textContent = `$${handBets[i]}`;
   }
-  updateRebetButtonPreview();
+  rebuildStacksFromBets();
+  updateButtonsForState();
 }
 
-/* ------------ seat toggle ------------ */
-function initSeatToggle(){
-  $$('#seatToggle button').forEach(btn=>{
+/* =============== Init =============== */
+function bindSeatClicks(){
+  seatRoots.forEach((root, idx)=>{
+    // click anywhere inside seat to select (pre-round only)
+    root.addEventListener('click', (e)=>{
+      if (inRound) return;
+      if (idx>=activeSeatsCount) return;
+      if (e.target.closest('button')) return;
+      seatRoots.forEach(r=>r.classList.remove('active'));
+      root.classList.add('active');
+      activeSeat = idx;
+    });
+    // If you use .bet-box element, also bind it specifically:
+    const box = root.querySelector('.bet-box');
+    if (box){
+      box.addEventListener('click', (e)=>{
+        if (inRound) return;
+        e.stopPropagation();
+        seatRoots.forEach(r=>r.classList.remove('active'));
+        root.classList.add('active');
+        activeSeat = idx;
+      });
+    }
+  });
+}
+function bindChips(){
+  chipBtns.forEach(btn=>{
     btn.addEventListener('click', ()=>{
       if (inRound) return;
-      $$('#seatToggle button').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-      activeSeatsCount = parseInt(btn.getAttribute('data-seats'),10)||1;
-      ensureSeat1Active(); applySeatLayout();
+      const val = parseInt(btn.getAttribute('data-value'),10);
+      // find current active seat (default 0)
+      let idx = activeSeat;
+      if (idx>=activeSeatsCount) idx = activeSeatsCount-1;
+      addToBet(idx, val);
+    });
+  });
+}
+function bindActions(){
+  dealBtn   .addEventListener('click', onDeal);
+  rebetBtn  .addEventListener('click', onRebet);
+  hitBtn    .addEventListener('click', onHit);
+  standBtn  .addEventListener('click', onStand);
+  doubleBtn .addEventListener('click', onDouble);
+  splitBtn  .addEventListener('click', onSplit);
+}
+function bindSeatToggle(){
+  seatTogBtns.forEach(b=>{
+    b.addEventListener('click', ()=>{
+      if (inRound) return;
+      seatTogBtns.forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      activeSeatsCount = parseInt(b.getAttribute('data-seats'),10) || 1;
+      applySeatLayout();
+      updateButtonsForState();
     });
   });
 }
 
-/* ------------ profile / settings ------------ */
-function initProfilePanel(){
-  byId('decksInput')?.addEventListener('change', (e)=>{
-    const v = parseInt(e.target.value,10);
-    if (v>=1 && v<=8) decks=v;
-  });
-
-  byId('resetBank')?.addEventListener('click', ()=>{
-    playerBank=1000; renderBank(); clearStacksAndBets();
-    inRound=false; dealer=[]; hands=[[],[],[]];
-    byId('dealerCards')?.replaceChildren(); byId('dealerTotal')?.replaceChildren?.();
-    for (let i=0;i<3;i++){ handContainer(i)?.replaceChildren(); totalContainer(i)?.replaceChildren?.(); }
-    updateRebetButton();
-  });
-
-  byId('resetStats')?.addEventListener('click', ()=>{
-    try{ localStorage.clear(); }catch(e){}
-    location.href = location.pathname + '?fresh=1';
-  });
+function boot(){
+  applySeatLayout();
+  bindSeatClicks();
+  bindChips();
+  bindActions();
+  bindSeatToggle();
+  renderBank();
+  renderAll();
 }
 
-/* ------------ buttons update ------------ */
-function updateButtonsForState(){
-  if(!inRound){ setButtons(false,false,false,false); return; }
-  if(finished[activeSeat]){ setButtons(false,false,false,false); return; }
-  const t = Number(total(hands[activeSeat]));
-  const canH = t<21;
-  const canS = true;
-  const canD = canDouble(activeSeat);
-  const canSp = canSplit(activeSeat);
-  setButtons(canH,canS,canD,canSp);
-}
+document.addEventListener('DOMContentLoaded', boot);
