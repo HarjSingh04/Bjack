@@ -1,54 +1,74 @@
-/* =========================
-   HS Blackjack — FULL CSS
-   Modern table, responsive, payout bubbles
-   ========================= */
 /* ===== Reset / base ===== */
 *{box-sizing:border-box}
 html,body{height:100%}
+html{-webkit-text-size-adjust:100%}
 :root{
   --bg:#081522;--panel:#0c2234;--ink:#0b3344;--line:#ffffff22;--white:#fff;
   --mint:#38b6ab;--glow:#79e1f7;
 }
-html{-webkit-text-size-adjust:100%}
-body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--white);background:var(--bg);overflow-x:hidden}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+  color:var(--white);
+  background:var(--bg);
+  overflow-x:hidden;
+}
 
 /* ===== Header ===== */
-#topbar{max-width:1100px;margin:14px auto 8px;display:flex;justify-content:space-between;align-items:center;padding:0 12px}
-#playerBadge{display:flex;gap:10px;align-items:center;background:#123346;border:1px solid var(--line);border-radius:999px;padding:6px 12px}
-#playerBadge .tag{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:999px;background:#38b6ab;color:#012;font-weight:800}
+#topbar{
+  max-width:1100px;margin:14px auto 8px;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:0 12px
+}
+#playerBadge{
+  display:flex;gap:10px;align-items:center;
+  background:#123346;border:1px solid var(--line);border-radius:999px;padding:6px 12px
+}
+#playerBadge .tag{
+  display:inline-grid;place-items:center;width:28px;height:28px;border-radius:999px;
+  background:#38b6ab;color:#012;font-weight:800
+}
 
 /* ===== Dealer area ===== */
 #dealerArea{
-  position:relative;max-width:1100px;margin:8px auto;padding:26px 12px 42px;background:
-  radial-gradient(120% 120% at 50% -20%, #14506870, transparent 60%),
-  radial-gradient(120% 120% at 50% 120%, #0f2c40a6, transparent 65%),
-  var(--panel);
+  position:relative;max-width:1100px;margin:8px auto;padding:26px 12px 42px;
+  background:
+    radial-gradient(120% 120% at 50% -20%, #14506870, transparent 60%),
+    radial-gradient(120% 120% at 50% 120%, #0f2c40a6, transparent 65%),
+    var(--panel);
   border:1px dashed #ffffff26;border-radius:18px;overflow:hidden
 }
-/* Cards + total grouped together, below stencil */
+/* Cards + total grouped together and centered, pushed below wording/curve */
 #dealerTray{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:46px}
 #dealerCards{display:flex;gap:8px}
-#dealerTotal{background:var(--ink);border:1px solid var(--line);border-radius:10px;padding:4px 10px;font-weight:800;min-width:34px;text-align:center}
+#dealerTotal{
+  background:var(--ink);border:1px solid var(--line);border-radius:10px;
+  padding:4px 10px;font-weight:800;min-width:34px;text-align:center
+}
 
-/* ===== Seats area ===== */
+/* ===== Seats / table ===== */
 #seatsArea{
-  position:relative;max-width:1100px;margin:12px auto 0;padding:24px 16px 26px;background:
-  radial-gradient(110% 110% at 50% -10%, #13425a66, transparent 60%),
-  radial-gradient(110% 110% at 50% 120%, #0e2a3d8a, transparent 65%),
-  var(--panel);
-  border:1px dashed #ffffff26;border-radius:18px;min-height:380px;display:grid;gap:18px
+  position:relative;max-width:1100px;margin:12px auto 0;padding:24px 16px 26px;
+  background:
+    radial-gradient(110% 110% at 50% -10%, #13425a66, transparent 60%),
+    radial-gradient(110% 110% at 50% 120%, #0e2a3d8a, transparent 65%),
+    var(--panel);
+  border:1px dashed #ffffff26;border-radius:18px;min-height:380px;
+  display:grid;gap:18px
 }
 #seatsArea.solo{grid-template-columns:1fr}
 #seatsArea.duo {grid-template-columns:repeat(2,1fr)}
 #seatsArea.trio{grid-template-columns:repeat(3,1fr)}
+/* Center the single seat */
 #seatsArea.solo .seat{width:clamp(320px,42vw,520px);margin:0 auto}
 
-/* ===== Seat ===== */
+/* Seat block */
 .seat{position:relative;min-height:260px;border-radius:16px}
 .seat.fade-out{opacity:0;transition:opacity .35s ease}
+/* remove any old square highlight */
 .seat::before,.seat::after{display:none!important;content:none!important}
 
-/* Dotted bet area (SVG file required at assets/bet-box.svg) */
+/* Dotted bet area (SVG) */
 .bet-box{
   position:absolute;top:18px;left:18px;right:18px;bottom:18px;
   background:url('assets/bet-box.svg') center/contain no-repeat;
@@ -57,27 +77,29 @@ body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Aria
 .seat.active .bet-box{filter:drop-shadow(0 0 10px rgba(121,225,247,.35))}
 .bet-box:active{transform:scale(.985)}
 
-/* Cards MUST live inside dotted box */
+/* Cards must live INSIDE the dotted box */
 .seat .cards{
   position:absolute;top:34px;left:34px;right:34px;bottom:30px;
   display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;z-index:4
 }
-/* Hide legacy bet pill (we still update text in JS in case you later unhide it) */
-.seat .bet{display:none}
 
-/* Total badge for each seat */
+/* Seat total badge */
 .total{
   position:absolute;top:6px;left:50%;transform:translateX(-50%);
   background:var(--ink);border:1px solid var(--line);border-radius:10px;
   padding:2px 10px;font-weight:800;z-index:5
 }
 
-/* Chip stack (visual only) */
-.seat .bet-stack{position:absolute;left:26px;bottom:26px;width:80px;height:72px;z-index:5;pointer-events:none}
+/* Bet stack visual (chips pile) */
+.seat .bet-stack{
+  position:absolute;left:26px;bottom:26px;width:80px;height:72px;z-index:5;pointer-events:none
+}
 
-/* Cards */
-.card{width:66px;height:96px;border-radius:10px;background:#fff;color:#222;display:grid;place-items:center;
-  box-shadow:0 12px 18px rgba(0,0,0,.25);transition:transform .18s ease,opacity .18s ease}
+/* ===== Cards ===== */
+.card{
+  width:66px;height:96px;border-radius:10px;background:#fff;color:#222;display:grid;place-items:center;
+  box-shadow:0 12px 18px rgba(0,0,0,.25);transition:transform .18s ease,opacity .18s ease
+}
 .card.red{color:#c73742}
 .card.back{background:linear-gradient(135deg,#234a68 0%,#2a5c7f 100%);color:#fff}
 .card .small{position:absolute;top:6px;left:6px;font-size:12px;font-weight:800}
@@ -86,32 +108,24 @@ body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Aria
 .card.deal-slow{opacity:0;transform:translateY(-10px) scale(.95)}
 .card.deal-slow.show{opacity:1;transform:translateY(0) scale(1)}
 
-/* Payout bubble */
-.payout{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(.9);
-  background:#0a3a50;border:1px solid #2dd4bf66;border-radius:999px;padding:8px 16px;font-weight:800;opacity:0;z-index:6;
-  transition:transform .16s ease,opacity .16s ease}
+/* ===== Payout bubble (centered on cards) ===== */
+.payout{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(.9);
+  background:#0a3a50;border:1px solid #2dd4bf66;border-radius:999px;padding:8px 16px;font-weight:800;
+  opacity:0;z-index:6;transition:transform .16s ease,opacity .16s ease
+}
 .payout.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .payout.win{color:#67f6d1}.payout.push{color:#9fc0ff}.payout.lose{color:#ff8a8a}
 
-/* ===== Control bar (chips left, actions right) ===== */
-#controlBar{
-  max-width:1100px;margin:12px auto;display:flex;align-items:center;gap:12px;
-  justify-content:space-between;flex-wrap:wrap;padding:0 8px
-}
+/* ===== Controls ===== */
+#controlBar{max-width:1100px;margin:12px auto;display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap;padding:0 8px}
 #chipsArea{display:flex;gap:10px;align-items:center}
 #seatToggle{display:flex;gap:8px;justify-content:center;flex:1}
-#seatToggle button{background:#0f2b3d;color:#e9fbff;border:1px solid #1f445a;border-radius:10px;padding:8px 10px;font-weight:800}
-#seatToggle button.active{outline:2px solid #fff3}
+#seatToggle button{border:none;border-radius:10px;padding:8px 10px;background:#0e2a3b;color:#c9e6ff}
+#seatToggle button.active{background:#135066;color:#fff}
 #actionButtons{display:flex;gap:12px;align-items:center}
 
-/* Chips */
-#chipsArea .chip-img{
-  width:68px;height:68px;border-radius:999px;border:4px solid #ff5a5a;background:#fff;font-weight:800;cursor:pointer
-}
-#chipsArea.shake{animation:shk .18s}
-@keyframes shk{0%,100%{transform:translateX(0)}35%{transform:translateX(-6px)}70%{transform:translateX(6px)}}
-
-/* Action buttons — interactive styles */
+/* Buttons — rich interactive look */
 .btn{
   --bg:#1e3a4a; --gl:#40e0d0; --txt:#e7fbff;
   position:relative;border:none;color:var(--txt);
@@ -138,32 +152,84 @@ body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Aria
 .btn.primary.ready:not(.dimmed){animation:pulse 1.6s ease-in-out infinite}
 
 /* Insurance bar */
-#insuranceBar{max-width:1100px;margin:10px auto;padding:10px 12px;text-align:center;background:#0f2b3d;border:1px solid var(--line);border-radius:10px;display:none}
+#insuranceBar{
+  max-width:1100px;margin:10px auto;padding:10px 12px;text-align:center;
+  background:#0f2b3d;border:1px solid var(--line);border-radius:10px;display:none
+}
 #insuranceBar.show{display:block}
 
-/* ===== Mobile polish (iPhone/Safari) ===== */
-.card{width:clamp(54px,16vw,66px);height:clamp(78px,23vw,96px)}
-#chipsArea .chip-img{width:clamp(56px,17vw,68px);height:clamp(56px,17vw,68px)}
-#dealerTray{margin-top:clamp(28px,6vh,46px)}
-#dealerTotal{font-size:clamp(12px,3.2vw,14px)}
-#seatsArea{min-height:auto;padding-bottom:18px}
-.seat{min-height:clamp(200px,44vh,260px)}
-.bet-box{top:12px;left:12px;right:12px;bottom:12px}
-.seat .cards{
-  top:clamp(18px,3vh,26px);
-  left:clamp(18px,3vw,26px);
-  right:clamp(18px,3vw,26px);
-  bottom:clamp(18px,3vh,24px);
+/* ===== Vector chip artwork hookup ===== */
+#chipsArea .chip-img{
+  width: clamp(56px, 7vw, 72px);
+  height: clamp(56px, 7vw, 72px);
+  border-radius: 50%;
+  border: none;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  position: relative;
+  cursor: pointer;
 }
-.total{top:-10px;transform:translate(-50%,0)}
-#controlBar{
-  position:sticky;bottom:0;
-  padding:10px max(8px,env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-right));
-  backdrop-filter:blur(6px);
-  background:linear-gradient(to top, rgba(8,21,34,.85), rgba(8,21,34,.35));
-  z-index:20
+#chipsArea .chip-img span{position:absolute;inset:0;color:transparent;font-size:0;line-height:0}
+/* Map values to SVGs */
+#chipsArea .chip-img[data-value="5"]   { background-image: url('assets/chip-5.svg'); }
+#chipsArea .chip-img[data-value="20"]  { background-image: url('assets/chip-20.svg'); }
+#chipsArea .chip-img[data-value="50"]  { background-image: url('assets/chip-50.svg'); }
+#chipsArea .chip-img[data-value="100"] { background-image: url('assets/chip-100.svg'); }
+
+/* Tokens that build the bet stack (JS creates) */
+.chip-token{
+  width:42px;height:42px;border-radius:999px;background:#fff;border:3px solid #ff5a5a;
+  display:grid;place-items:center;font-weight:800;color:#012;transform:translateY(12px) scale(.8);opacity:.9
 }
-@media (max-width:420px){
-  #chipsArea{gap:8px}
-  #actionButtons{gap:8px}
+.chip-token.in{transition:transform .18s ease,opacity .18s ease}
+.chip-token.locked{opacity:1}
+.chip-token.v5   {border-color:#1abc9c}
+.chip-token.v20  {border-color:#3498db}
+.chip-token.v50  {border-color:#f1c40f}
+.chip-token.v100 {border-color:#9b59b6}
+
+/* ===== Desktop/tablet: chips left, actions right ===== */
+@media (min-width:900px){
+  #seatsArea{ position:relative; padding-bottom:56px; }
+  #controlBar{ position:static; display:contents; }    /* children position under #seatsArea */
+
+  #chipsArea, #actionButtons{
+    position:absolute; top:50%; transform:translateY(-50%);
+    display:flex; gap:12px; z-index:30;
+  }
+  #chipsArea{ left:-96px;  flex-direction:column; }
+  #actionButtons{ right:-96px; flex-direction:column; }
+
+  #chipsArea .chip-img{ width:64px; height:64px; }
+  #actionButtons .btn{ padding:9px 14px; }
+}
+
+/* ===== Mobile / small screens: bottom bar ===== */
+@media (max-width:899px){
+  #controlBar{
+    position: sticky;
+    bottom: 0;
+    padding: 10px max(8px, env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-right));
+    backdrop-filter: blur(6px);
+    background: linear-gradient(to top, rgba(8,21,34,.85), rgba(8,21,34,.35));
+    z-index: 20;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  }
+  #chipsArea{ flex-direction:row }
+  #actionButtons{ flex-direction:row }
+  /* responsive card & layout sizing */
+  .card{ width:clamp(54px,16vw,66px); height:clamp(78px,23vw,96px); }
+  #dealerTray{ margin-top: clamp(28px, 6vh, 46px); flex-wrap: nowrap; }
+  #dealerTotal{ font-size: clamp(12px, 3.2vw, 14px); }
+  #seatsArea{ min-height:auto; padding-bottom:18px; }
+  .seat{ min-height: clamp(200px, 44vh, 260px); }
+  .bet-box{ top:12px; left:12px; right:12px; bottom:12px; }
+  .seat .cards{
+    top: clamp(18px, 3vh, 26px);
+    left: clamp(18px, 3vw, 26px);
+    right: clamp(18px, 3vw, 26px);
+    bottom: clamp(18px, 3vh, 24px);
+  }
 }
