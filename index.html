@@ -16,7 +16,7 @@
 
   <!-- Dealer felt -->
   <section id="dealerArea">
-    <!-- Cards + total together, positioned below the stencil text -->
+    <!-- Cards + total grouped so they move together -->
     <div id="dealerTray">
       <div id="dealerCards"></div>
       <div id="dealerTotal"></div>
@@ -30,7 +30,6 @@
       <div class="bet-box" aria-label="Bet area"></div>
       <div class="total" id="total1"></div>
       <div class="cards" id="hand1"></div>
-      <div class="bet">$0</div>
       <div class="bet-stack"></div>
     </div>
     <!-- Seat 2 -->
@@ -38,7 +37,6 @@
       <div class="bet-box" aria-label="Bet area"></div>
       <div class="total" id="total2"></div>
       <div class="cards" id="hand2"></div>
-      <div class="bet">$0</div>
       <div class="bet-stack"></div>
     </div>
     <!-- Seat 3 -->
@@ -46,7 +44,6 @@
       <div class="bet-box" aria-label="Bet area"></div>
       <div class="total" id="total3"></div>
       <div class="cards" id="hand3"></div>
-      <div class="bet">$0</div>
       <div class="bet-stack"></div>
     </div>
   </section>
@@ -76,8 +73,8 @@
     </div>
   </div>
 
-  <!-- Insurance bar (kept for later, hidden by default) -->
-  <div id="insuranceBar">
+  <!-- Insurance bar (optional) -->
+  <div id="insuranceBar" style="display:none">
     Dealer shows Ace. Take Insurance?
     <button id="insYes">Yes</button>
     <button id="insNo">No</button>
