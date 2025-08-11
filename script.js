@@ -439,52 +439,74 @@ async function doStand(){
   advanceSeatOrDealer();
 }
 
+function setBetLabel(i, amt){
+  const s = seats[i]; if (!s || !s.bet) return;
+  s.bet.textContent = '$' + (amt||0);
+}
+
+function rebuildStacksFromBets(){
+  for (let i = 0; i < activeSeatsCount; i++){
+    const s = seats[i]; if (!s || !s.stack) continue;
+    s.stack.innerHTML = '';
+    let r = handBets[i] || 0;
+    const pushMany = (v, cls) => { while (r >= v){ 
+      const t = document.createElement('div');
+      t.className = `chip-token ${cls} in locked`;
+      t.innerHTML = `<span>$${v}</span>`;
+      const n = s.stack.children.length, x=(-4+(n%3)*4), y=n*6;
+      t.style.transform = `translate(${x}px, ${-y}px) scale(1)`;
+      t.style.zIndex = String(100+n);
+      s.stack.appendChild(t);
+      r -= v;
+    }};
+    pushMany(100,'v100'); pushMany(50,'v50'); pushMany(20,'v20'); pushMany(5,'v5');
+  }
+}
+
+
 /* Split: turn the right-adjacent empty seat into the split hand */
 async function doSplit(){
   if (!canSplit(activeSeat)) return;
 
-  // Where to insert new hand
   const insertAt = activeSeat + 1;
-  const newSeatIndex = insertAt;
 
-  // Expand seat count (cap at 3), lay out seats, refresh refs
+  // Expand to host the new split seat
   activeSeatsCount = Math.min(3, activeSeatsCount + 1);
   applySeatLayout();
-  cacheDom();
+  cacheDom(); // refresh seat DOM refs (bet/stack)
 
-  // Shift any existing right seat data up by one to free the slot
-  for (let i = activeSeatsCount - 1; i > newSeatIndex; i--){
+  // Shift right-side seat data (if there was one) to make room
+  for (let i = activeSeatsCount - 1; i > insertAt; i--){
     hands[i]    = hands[i-1];
     handBets[i] = handBets[i-1];
     doubled[i]  = doubled[i-1];
     finished[i] = finished[i-1];
   }
 
-  // Move second card to the new hand
-  const orig = hands[activeSeat];
-  const moved = orig.pop();
-  hands[newSeatIndex] = [ moved ];
-  finished[newSeatIndex] = false;
-  doubled[newSeatIndex]  = false;
+  // Move one card to the new split hand
+  const moved = hands[activeSeat].pop();
+  hands[insertAt] = [ moved ];
+  finished[insertAt] = false;
+  doubled[insertAt]  = false;
 
-  // Copy bet; deduct stake for new hand
+  // Copy stake to new hand and deduct from bank
   const stake = handBets[activeSeat];
-  handBets[newSeatIndex] = stake;
+  handBets[insertAt] = stake;
   playerBank -= stake; renderBank();
 
-  // Copy chip visuals, lock stacks
-  cloneStackTokens(activeSeat, newSeatIndex);
-  lockStacks();
+  // Rebuild ALL bet pills + chip stacks from current handBets
+  for (let i=0; i<activeSeatsCount; i++) setBetLabel(i, handBets[i]);
+  rebuildStacksFromBets();
 
-  // Deal one card to each split hand
+  // Deal one extra card to each split hand
   const c1 = draw(); c1.hidden=false; hands[activeSeat].push(c1);
   await slowDealRender();
-  const c2 = draw(); c2.hidden=false; hands[newSeatIndex].push(c2);
+  const c2 = draw(); c2.hidden=false; hands[insertAt].push(c2);
   await slowDealRender();
 
-  // Continue play from current seat; later flow advances to the new seat
   updateButtonsForState();
 }
+
 
 /* ------------ Dealer play & settle ALL seats ------------ */
 async function dealerPlayAndSettleAll(){
