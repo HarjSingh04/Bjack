@@ -193,7 +193,79 @@ body{
 #seatToggle button{ border:none; border-radius:10px; padding:8px 10px; background:#0e2a3b; color:#c9e6ff }
 #seatToggle button.active{ background:#135066; color:#fff }
 #actionButtons{ display:flex; gap:12px; align-items:center }
+/* --- Controls bar pinned above iOS Safari bottom bar --- */
+body { padding-bottom: 120px; } /* make room so content isn’t covered */
 
+#controlsArea{
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 50;
+
+  width: min(100%, 920px);
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(0,0,0,.25);
+  box-shadow: 0 8px 28px rgba(0,0,0,.35);
+  backdrop-filter: blur(8px);
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  /* allow clicks inside, but not on the “empty” bar area */
+  pointer-events: none;
+}
+#chipsArea, #seatToggle, #actionButtons{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto;  /* re-enable clicks for the groups */
+}
+
+/* keep chips visible/tappable on phones */
+#chipsArea .chip-img{
+  width: 54px;
+  height: 54px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  border: 0;
+}
+
+/* nice large action buttons */
+#actionButtons button{
+  min-width: 72px;
+  height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 12px;
+  font-weight: 700;
+  color: #022;
+  background: #86e3bf;
+  box-shadow: 0 6px 14px rgba(0,0,0,.25);
+}
+#actionButtons button.dimmed{
+  opacity: .45;
+  filter: grayscale(.2);
+}
+
+/* seat toggles */
+#seatToggle button{
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 0;
+  background: rgba(255,255,255,.15);
+  color: #fff;
+}
+#seatToggle button.active{ background: #2ec4b6; color:#012; }
+
+/* small phones: stack seat toggle below chips */
+@media (max-width: 420px){
+  #controlsArea{ flex-wrap: wrap; row-gap: 10px; }
+}
 /* Buttons look */
 .btn{
   --bg:#1e3a4a; --gl:#40e0d0; --txt:#e7fbff;
