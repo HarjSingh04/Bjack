@@ -27,9 +27,10 @@ body{
   color:var(--text);
   overflow-x:hidden;
   user-select:none;
+  padding-bottom:140px; /* space for fixed control bar on mobile */
 }
 
-/* ===================== HEADER (SAFE & TEMPTING) ===================== */
+/* ===================== HEADER ===================== */
 #topbar{
   position:relative; z-index:50;
   max-width:1100px; margin:10px auto 6px;
@@ -118,7 +119,7 @@ body{
 .seat{ position:relative; min-height:260px; border-radius:16px }
 .seat.fade-out{ opacity:0; transition:opacity .35s ease }
 
-/* Dotted bet area */
+/* Dotted bet area (SVG bg) */
 .bet-box{
   position:absolute; top:18px; left:18px; right:18px; bottom:18px;
   background:url('assets/bet-box.svg') center/contain no-repeat;
@@ -138,6 +139,14 @@ body{
   position:absolute; top:6px; left:50%; transform:translateX(-50%);
   background:var(--ink); border:1px solid var(--line); border-radius:10px;
   padding:2px 10px; font-weight:800; z-index:5
+}
+
+/* Bet amount bubble */
+.bet-pill{
+  position:absolute; left:14px; top:14px;
+  background:#153b2a; border:1px solid #ffffff29; color:#eaffff;
+  padding:4px 10px; border-radius:999px; font-weight:800; z-index:6;
+  box-shadow:0 6px 16px rgba(0,0,0,.25), inset 0 0 0 1px #35d7c055;
 }
 
 /* Bet stack host (center-bottom of bet box area) */
@@ -183,90 +192,34 @@ body{
 .payout.show{ opacity:1; transform:translate(-50%,-50%) scale(1) }
 .payout.win{ color:#67f6d1 } .payout.push{ color:#9fc0ff } .payout.lose{ color:#ff8a8a }
 
-/* ===================== CONTROL BAR ===================== */
+/* ===================== CONTROL BAR (fixed footer) ===================== */
 #controlBar{
-  max-width:1100px; margin:12px auto; display:flex; align-items:center; gap:12px;
-  justify-content:space-between; flex-wrap:wrap; padding:0 8px
-}
-#chipsArea{ display:flex; gap:10px; align-items:center }
-#seatToggle{ display:flex; gap:8px; justify-content:center; flex:1 }
-#seatToggle button{ border:none; border-radius:10px; padding:8px 10px; background:#0e2a3b; color:#c9e6ff }
-#seatToggle button.active{ background:#135066; color:#fff }
-#actionButtons{ display:flex; gap:12px; align-items:center }
-/* --- Controls bar pinned above iOS Safari bottom bar --- */
-body { padding-bottom: 120px; } /* make room so content isn’t covered */
-
-#controlsArea{
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
   bottom: max(12px, env(safe-area-inset-bottom));
-  z-index: 50;
+  z-index: 60;
 
-  width: min(100%, 920px);
+  width: min(100%, 1000px);
   padding: 10px 14px;
   border-radius: 14px;
-  background: rgba(0,0,0,.25);
+  background: rgba(0,0,0,.28);
   box-shadow: 0 8px 28px rgba(0,0,0,.35);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(10px);
 
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-
-  /* allow clicks inside, but not on the “empty” bar area */
-  pointer-events: none;
 }
+
 #chipsArea, #seatToggle, #actionButtons{
   display: flex;
   align-items: center;
   gap: 10px;
-  pointer-events: auto;  /* re-enable clicks for the groups */
 }
 
-/* keep chips visible/tappable on phones */
-#chipsArea .chip-img{
-  width: 54px;
-  height: 54px;
-  background-size: contain;
-  background-repeat: no-repeat;
-  border: 0;
-}
-
-/* nice large action buttons */
-#actionButtons button{
-  min-width: 72px;
-  height: 44px;
-  padding: 0 14px;
-  border: 0;
-  border-radius: 12px;
-  font-weight: 700;
-  color: #022;
-  background: #86e3bf;
-  box-shadow: 0 6px 14px rgba(0,0,0,.25);
-}
-#actionButtons button.dimmed{
-  opacity: .45;
-  filter: grayscale(.2);
-}
-
-/* seat toggles */
-#seatToggle button{
-  height: 36px;
-  padding: 0 10px;
-  border-radius: 999px;
-  border: 0;
-  background: rgba(255,255,255,.15);
-  color: #fff;
-}
-#seatToggle button.active{ background: #2ec4b6; color:#012; }
-
-/* small phones: stack seat toggle below chips */
-@media (max-width: 420px){
-  #controlsArea{ flex-wrap: wrap; row-gap: 10px; }
-}
-/* Buttons look */
+/* pretty buttons */
 .btn{
   --bg:#1e3a4a; --gl:#40e0d0; --txt:#e7fbff;
   position:relative; border:none; color:var(--txt);
@@ -281,31 +234,22 @@ body { padding-bottom: 120px; } /* make room so content isn’t covered */
   box-shadow:0 2px 0 #091b26,0 0 0 1px #0b2c3a inset }
 .btn.primary{ --bg:#134b4a } .btn.accent{ --bg:#193f6a } .btn.safe{ --bg:#1b4d2e }
 .btn.gold{ --bg:#5a4616 } .btn.violet{ --bg:#3a235a }
-.btn:not(.dimmed)::after{
-  content:''; position:absolute; inset:-2px; border-radius:14px;
-  box-shadow:0 0 0 0 rgba(64,224,208,.65), 0 0 24px 6px color-mix(in oklab,var(--gl),transparent 45%);
-  opacity:.9; pointer-events:none; transition:opacity .15s ease
-}
-.btn.dimmed::after{ opacity:0 }
+.btn.primary.ready:not(.dimmed){ animation:pulse 1.6s ease-in-out infinite }
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(40,224,192,.45),0 0 18px 6px rgba(40,224,192,.25)}
 50%{box-shadow:0 0 0 4px rgba(40,224,192,0),0 0 26px 10px rgba(40,224,192,.35)}}
-.btn.primary.ready:not(.dimmed){ animation:pulse 1.6s ease-in-out infinite }
 
-/* ===================== VECTOR CHIPS (CONTROL BAR) ===================== */
+/* Chips in the bar */
 #chipsArea .chip-img{
-  width: clamp(56px, 7vw, 72px);
-  height: clamp(56px, 7vw, 72px);
-  border-radius:50%; border:none; background-color:transparent;
-  background-repeat:no-repeat; background-position:center; background-size:contain;
-  position:relative; cursor:pointer;
+  width: 56px; height: 56px; border-radius:50%; border:none;
+  background-color:transparent; background-repeat:no-repeat; background-position:center; background-size:contain;
+  cursor:pointer;
 }
-#chipsArea .chip-img span{ position:absolute; inset:0; color:transparent; font-size:0; line-height:0 }
 #chipsArea .chip-img[data-value="5"]   { background-image:url('assets/chip-5.svg') }
 #chipsArea .chip-img[data-value="20"]  { background-image:url('assets/chip-20.svg') }
 #chipsArea .chip-img[data-value="50"]  { background-image:url('assets/chip-50.svg') }
 #chipsArea .chip-img[data-value="100"] { background-image:url('assets/chip-100.svg') }
 
-/* ===================== REALISTIC BET STACKS (INSIDE SEAT) ===================== */
+/* Realistic bet stacks inside seat */
 .bet-stack .coin{
   position:absolute; width:44px; height:44px;
   background-repeat:no-repeat; background-position:center; background-size:contain;
@@ -317,58 +261,18 @@ body { padding-bottom: 120px; } /* make room so content isn’t covered */
 .bet-stack .coin.in{ opacity:1; transform: translate(0,0) scale(1) }
 @media (max-width:520px){ .bet-stack .coin{ width:40px; height:40px } }
 
-/* ===================== DESKTOP/TABLET: CHIPS LEFT, BUTTONS RIGHT ===================== */
-@media (min-width:900px){
-  #seatsArea{ position:relative; padding-bottom:56px; }
-  #controlBar{ position:static; display:contents; } /* children position inside seatsArea */
-
-  #chipsArea, #actionButtons{
-    position:absolute; top:50%; transform:translateY(-50%);
-    display:flex; gap:12px; z-index:30;
-  }
-  #chipsArea{ left:-96px;  flex-direction:column; }
-  #actionButtons{ right:-96px; flex-direction:column; }
-
-  #chipsArea .chip-img{ width:64px; height:64px; }
-  #actionButtons .btn{ padding:9px 14px; }
-}
-
-/* ===================== MOBILE: SEAT CAROUSEL + STICKY FOOTER ===================== */
+/* Mobile: carousel seats if 2–3 are visible */
 @media (max-width:520px){
-  /* 1 seat per “page” with snap scroll */
   #seatsArea{
     display:grid; grid-auto-flow:column; grid-auto-columns:88vw;
     overflow-x:auto; scroll-snap-type:x mandatory; gap:12px;
     padding:16px 6vw 120px;
   }
   #seatsArea::-webkit-scrollbar{ display:none }
-
   .seat{ scroll-snap-align:center; min-height:62vh; position:relative }
   .bet-box{ top:10px; left:10px; right:10px; bottom:10px }
   .seat .cards{ top:24px; left:24px; right:24px; bottom:68px }
   .seat .bet-stack{ left:14px; transform:none; width:auto; height:auto; bottom:14px }
-
-  /* Cards size */
   .card{ width:clamp(54px,16vw,66px); height:clamp(78px,23vw,96px) }
   .flying-card{ width:clamp(54px,16vw,66px); height:clamp(78px,23vw,96px) }
-
-  /* Sticky footer: chips row + actions grid */
-  #controlBar{
-    position:sticky; bottom:0; z-index:50;
-    padding:10px max(8px, env(safe-area-inset-left))
-             calc(10px + env(safe-area-inset-bottom))
-             max(8px, env(safe-area-inset-right));
-    backdrop-filter: blur(8px);
-    background: linear-gradient(to top, rgba(8,21,34,.92), rgba(8,21,34,.55));
-    display:grid; grid-template-columns:1fr; row-gap:10px;
-  }
-  #chipsArea{ display:flex; gap:12px; overflow-x:auto; padding:0 4px 2px }
-  #chipsArea::-webkit-scrollbar{ display:none }
-  #chipsArea .chip-img{ width:56px; height:56px; flex:0 0 auto }
-
-  #actionButtons{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px }
-  #actionButtons .btn{ width:100%; padding:11px 0 }
-
-  #seatToggle{ order:-1; justify-content:center; gap:10px }
-  #seatToggle button{ padding:8px 12px }
 }
