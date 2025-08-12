@@ -7,88 +7,78 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body data-theme="felt">
-
   <!-- Top bar -->
   <header id="topbar">
     <div id="brand">HS Blackjack</div>
-    <div id="playerBadge" class="player-badge">
+    <div class="player-badge" id="playerBadge">
       <span class="tag">HS</span>
       <span class="label">Player</span>
       <span class="money" id="playerBank">$1000</span>
     </div>
   </header>
 
-  <!-- Dealer area -->
+  <!-- Dealer felt -->
   <section id="dealerArea">
-    <!-- dealing shoe -->
-    <img id="dealShoe" class="deal-shoe" src="assets/deal-shoe.svg" alt="">
-    <!-- cards + total together -->
+    <img id="dealShoe" class="deal-shoe" src="assets/shoe.png" alt="Shoe" />
     <div id="dealerTray">
       <div id="dealerCards"></div>
       <div id="dealerTotal"></div>
     </div>
   </section>
 
-  <!-- Seats / table -->
-  <section id="seatsArea" class="arc solo">
+  <!-- Seats / player area -->
+  <section id="seatsArea" class="solo">
     <!-- Seat 1 -->
     <div class="seat" data-seat="1">
-      <div class="bet-box" aria-label="Bet area"></div>
+      <div class="bet-pill" id="bet1">$0</div>
       <div class="total" id="total1"></div>
       <div class="cards" id="hand1"></div>
-      <div class="bet" id="bet1">$0</div>
       <div class="bet-stack"></div>
+      <div class="bet-box" aria-label="Bet area"></div>
     </div>
 
     <!-- Seat 2 -->
     <div class="seat" data-seat="2" style="display:none">
-      <div class="bet-box" aria-label="Bet area"></div>
+      <div class="bet-pill" id="bet2">$0</div>
       <div class="total" id="total2"></div>
       <div class="cards" id="hand2"></div>
-      <div class="bet" id="bet2">$0</div>
       <div class="bet-stack"></div>
+      <div class="bet-box" aria-label="Bet area"></div>
     </div>
 
     <!-- Seat 3 -->
     <div class="seat" data-seat="3" style="display:none">
-      <div class="bet-box" aria-label="Bet area"></div>
+      <div class="bet-pill" id="bet3">$0</div>
       <div class="total" id="total3"></div>
       <div class="cards" id="hand3"></div>
-      <div class="bet" id="bet3">$0</div>
       <div class="bet-stack"></div>
-    </div>
-
-    <!-- Controls live INSIDE seatsArea -->
-    <div id="controlBar">
-      <div id="chipsArea">
-        <button class="chip-img" data-value="5"><span>$5</span></button>
-        <button class="chip-img" data-value="20"><span>$20</span></button>
-        <button class="chip-img" data-value="50"><span>$50</span></button>
-        <button class="chip-img" data-value="100"><span>$100</span></button>
-      </div>
-
-      <div id="seatToggle">
-        <button data-seats="1" class="active">1 Seat</button>
-        <button data-seats="2">2 Seats</button>
-        <button data-seats="3">3 Seats</button>
-      </div>
-
-      <div id="actionButtons">
-        <button id="dealBtn"   class="btn primary">Deal</button>
-        <button id="rebetBtn"  class="btn primary dimmed" disabled>Rebet</button>
-        <button id="hitBtn"    class="btn accent  dimmed" disabled>Hit</button>
-        <button id="standBtn"  class="btn safe    dimmed" disabled>Stand</button>
-        <button id="doubleBtn" class="btn gold    dimmed" disabled>Double</button>
-        <button id="splitBtn"  class="btn violet  dimmed" disabled>Split</button>
-      </div>
+      <div class="bet-box" aria-label="Bet area"></div>
     </div>
   </section>
 
-  <!-- (optional) insurance bar hook -->
-  <div id="insuranceBar" style="display:none">
-    Dealer shows Ace. Take Insurance?
-    <button id="insYes">Yes</button>
-    <button id="insNo">No</button>
+  <!-- Controls: chips + seat toggle + actions -->
+  <div id="controlBar">
+    <div id="chipsArea" aria-label="Chips">
+      <button class="chip-img" data-value="5"><span>$5</span></button>
+      <button class="chip-img" data-value="20"><span>$20</span></button>
+      <button class="chip-img" data-value="50"><span>$50</span></button>
+      <button class="chip-img" data-value="100"><span>$100</span></button>
+    </div>
+
+    <div id="seatToggle" aria-label="Seats">
+      <button class="active" data-seats="1">1 Seat</button>
+      <button data-seats="2">2 Seats</button>
+      <button data-seats="3">3 Seats</button>
+    </div>
+
+    <div id="actionButtons" aria-label="Actions">
+      <button id="dealBtn"   class="btn primary">Deal</button>
+      <button id="rebetBtn"  class="btn accent">Rebet</button>
+      <button id="hitBtn"    class="btn safe"   disabled>Hit</button>
+      <button id="standBtn"  class="btn gold"   disabled>Stand</button>
+      <button id="doubleBtn" class="btn violet" disabled>Double</button>
+      <button id="splitBtn"  class="btn"        disabled>Split</button>
+    </div>
   </div>
 
   <script src="script.js"></script>
