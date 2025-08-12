@@ -1,4 +1,4 @@
-/* HS Blackjack — multi-seat + BJ autopay + shoe animation (hardened numeric bets) */
+/* HS Blackjack — multi-seat + BJ autopay + shoe animation */
 
 /* =============== DOM helpers =============== */
 const $  = (sel, root=document) => root.querySelector(sel);
@@ -66,9 +66,6 @@ const H_SPACING = COIN_SIZE * 0.80;
 const V_SPACING = COIN_SIZE * 0.22;
 const betCoins = [[],[],[]];     // [{value, el}, ...] per seat
 
-/* =============== Numeric guard =============== */
-const N = v => Number(v || 0);
-
 /* =============== Shoe / totals =============== */
 function freshDeck(){
   const d = [];
@@ -127,7 +124,7 @@ function renderDealer(){
     dealerCardsEl.appendChild(n);
     requestAnimationFrame(()=> n.classList.add('show'));
   }
-  dealerTotalEl.textContent = dealer.some(c=>c.hidden) ? '' : (N(total(dealer))||'');
+  dealerTotalEl.textContent = dealer.some(c=>c.hidden) ? '' : (total(dealer)||'');
 }
 function renderSeat(i){
   const hand = hands[i]; const el = handEls[i];
@@ -137,8 +134,8 @@ function renderSeat(i){
     el.appendChild(n);
     requestAnimationFrame(()=> n.classList.add('show'));
   }
-  totalEls[i].textContent = (N(total(hand)) || '');
-  if (betPills[i]) betPills[i].textContent = `$${N(handBets[i])||0}`;
+  totalEls[i].textContent = (total(hand) || '');
+  if (betPills[i]) betPills[i].textContent = `$${handBets[i]||0}`;
 }
 function renderAll(){ renderDealer(); for (let i=0;i<MAX_SEATS;i++) renderSeat(i); updateButtonsForState(); }
 
@@ -238,7 +235,7 @@ function rebuildStacksFromBets(){
     const host = stacks[i]; if (!host) continue;
     host.innerHTML = '';
     betCoins[i] = [];
-    let r = N(handBets[i]) || 0;
+    let r = handBets[i] || 0;
     const denoms = [100,50,20,5];
     for (const d of denoms){
       while (r >= d){
@@ -254,29 +251,21 @@ function rebuildStacksFromBets(){
   }
 }
 function addToBet(i, amount){
-  const a = Number(amount);
-  if (![5,20,50,100].includes(a)) return;
-
-  const staged = handBets.slice(0,activeSeatsCount).reduce((s,v)=>s + N(v), 0);
-  const want = staged + a;
-  if (want > playerBank){
-    const tray = $('#chipsArea'); tray?.classList.add('shake'); setTimeout(()=> tray?.classList.remove('shake'), 250);
-    return;
-  }
-
-  handBets[i] = N(handBets[i]) + a;
-  if (betPills[i]) betPills[i].textContent = `$${N(handBets[i])}`;
+  const want = handBets.slice(0,activeSeatsCount).reduce((a,b)=>a+b,0) + amount;
+  if (want > playerBank){ return; }
+  handBets[i] += amount;
+  if (betPills[i]) betPills[i].textContent = `$${handBets[i]}`;
 
   const host = stacks[i];
   if (host){
     const coin = document.createElement('div');
     coin.className = 'coin';
-    coin.style.backgroundImage = `url('${COIN_SVGS[a]}')`;
+    coin.style.backgroundImage = `url('${COIN_SVGS[amount]}')`;
     host.appendChild(coin);
-    betCoins[i].push({value:a, el:coin});
+    betCoins[i].push({value:amount, el:coin});
 
     // fly from chip tray to bet box
-    const activeChipBtn = document.querySelector(`#chipsArea .chip-img[data-value="${a}"]`);
+    const activeChipBtn = document.querySelector(`#chipsArea .chip-img[data-value="${amount}"]`);
     if (activeChipBtn){
       const from = activeChipBtn.getBoundingClientRect();
       const to   = host.getBoundingClientRect();
@@ -293,15 +282,15 @@ function addToBet(i, amount){
 
 /* =============== Buttons =============== */
 function updateButtonsForState(){
-  const anyStaged = handBets.slice(0,activeSeatsCount).some(v=>N(v)>0);
+  const anyStaged = handBets.slice(0,activeSeatsCount).some(v=>v>0);
   dealBtn.disabled  = inRound || !anyStaged;
-  rebetBtn.disabled = inRound || !lastBets.slice(0,activeSeatsCount).some(v=>N(v)>0);
+  rebetBtn.disabled = inRound || !lastBets.slice(0,activeSeatsCount).some(v=>v>0);
 
   const h = hands[activeSeat] || [];
-  const canHit    = inRound && !finished[activeSeat] && N(total(h)) < 21;
+  const canHit    = inRound && !finished[activeSeat] && total(h) < 21;
   const canStand  = inRound && !finished[activeSeat];
-  const canDouble = inRound && !finished[activeSeat] && h.length===2 && playerBank>=N(handBets[activeSeat]);
-  const canSplit  = inRound && !finished[activeSeat] && h.length===2 && canRanksSplit(h) && activeSeatsCount<3 && playerBank>=N(handBets[activeSeat]);
+  const canDouble = inRound && !finished[activeSeat] && h.length===2 && playerBank>=handBets[activeSeat];
+  const canSplit  = inRound && !finished[activeSeat] && h.length===2 && canRanksSplit(h) && activeSeatsCount<3 && playerBank>=handBets[activeSeat];
 
   hitBtn.disabled    = !canHit;
   standBtn.disabled  = !canStand;
@@ -333,22 +322,21 @@ function updateButtonsForState(){
 async function slowRenderAll(){ renderDealer(); for (let i=0;i<activeSeatsCount;i++) renderSeat(i); await sleep(DEAL_MS); }
 
 /* =============== Round flow =============== */
-function stageTotal(){ return handBets.slice(0,activeSeatsCount).reduce((a,b)=>a+N(b),0); }
+function stageTotal(){ return handBets.slice(0,activeSeatsCount).reduce((a,b)=>a+b,0); }
 
 async function onDeal(){
   if (inRound) return;
   const need = stageTotal(); if (need<=0 || need>playerBank) return;
 
   // Lock stakes
-  lastBets = handBets.slice(0,activeSeatsCount).map(N);
-  playerBank = N(playerBank) - need; renderBank();
+  lastBets = handBets.slice(0,activeSeatsCount);
+  playerBank -= need; renderBank();
   inRound = true; finished=[false,false,false]; doubled=[false,false,false];
   dealer = []; hands=[[],[],[]]; activeSeat = 0;
 
   clearNode(dealerCardsEl); dealerTotalEl.textContent='';
   for (let i=0;i<activeSeatsCount;i++){ clearNode(handEls[i]); totalEls[i].textContent=''; }
 
-  // Deal sequence with fly animation:
   // P1..Pn (first)
   for (let i=0;i<activeSeatsCount;i++){
     const c=draw(); c.hidden=false; hands[i].push(c);
@@ -369,7 +357,7 @@ async function onDeal(){
   const bjPlans=[];
   for (let i=0;i<activeSeatsCount;i++){
     if (isBlackjack(hands[i])){
-      const bet = N(handBets[i]);
+      const bet = handBets[i];
       const profit = Math.floor(bet*1.5);
       playerBank += bet + profit;
       finished[i]=true;
@@ -391,10 +379,10 @@ async function onDeal(){
 
 async function onHit(){
   if (!inRound || finished[activeSeat]) return;
-  const h = hands[activeSeat]; if (N(total(h))>=21) return;
+  const h = hands[activeSeat]; if (total(h)>=21) return;
   const c = draw(); c.hidden=false; h.push(c);
   await renderAndFly(activeSeat, c);
-  if (N(total(h))>=21){ finished[activeSeat]=true; advanceSeatOrDealer(); }
+  if (total(h)>=21){ finished[activeSeat]=true; advanceSeatOrDealer(); }
   else updateButtonsForState();
 }
 async function onStand(){
@@ -403,9 +391,9 @@ async function onStand(){
 }
 async function onDouble(){
   if (!inRound || finished[activeSeat]) return;
-  const bet = N(handBets[activeSeat]);
+  const bet = handBets[activeSeat];
   if (hands[activeSeat].length!==2 || playerBank<bet) return;
-  playerBank -= bet; handBets[activeSeat]=bet*2; renderBank(); rebuildStacksFromBets();
+  playerBank -= bet; handBets[activeSeat]+=bet; renderBank(); rebuildStacksFromBets();
   doubled[activeSeat]=true;
   const c = draw(); c.hidden=false; hands[activeSeat].push(c);
   await renderAndFly(activeSeat, c);
@@ -416,7 +404,7 @@ async function onSplit(){
   const h = hands[activeSeat];
   if (!(h.length===2 && canRanksSplit(h))) return;
   if (activeSeatsCount>=3) return;
-  const stake = N(handBets[activeSeat]); if (playerBank<stake) return;
+  const stake = handBets[activeSeat]; if (playerBank<stake) return;
 
   // Grow seats
   activeSeatsCount = Math.min(3, activeSeatsCount+1);
@@ -434,7 +422,7 @@ async function onSplit(){
   handBets[insertAt] = stake;
   playerBank -= stake; renderBank();
 
-  for (let i=0;i<activeSeatsCount;i++){ if (betPills[i]) betPills[i].textContent = `$${N(handBets[i])||0}`; }
+  for (let i=0;i<activeSeatsCount;i++){ if (betPills[i]) betPills[i].textContent = `$${handBets[i]||0}`; }
   rebuildStacksFromBets();
 
   const c1 = draw(); c1.hidden=false; hands[activeSeat].push(c1); await renderAndFly(activeSeat, c1);
@@ -444,19 +432,19 @@ async function onSplit(){
 
 /* =============== Turn progression =============== */
 function applySeatLayout(){
-  seatsArea.classList.remove('solo','duo','trio','arc');
-  seatsArea.classList.add('arc', activeSeatsCount===1?'solo':activeSeatsCount===2?'duo':'trio');
+  seatsArea.classList.remove('solo','duo','trio');
+  seatsArea.classList.add(activeSeatsCount===1?'solo':activeSeatsCount===2?'duo':'trio');
   for (let i=0;i<3;i++) seatRoots[i].style.display = (i<activeSeatsCount)?'':'none';
 }
 function nextUnfinishedSeat(fromIdx){ for (let i=fromIdx+1;i<activeSeatsCount;i++){ if(!finished[i]) return i; } return -1; }
-function allPlayersBustedOnly(){ for (let i=0;i<activeSeatsCount;i++){ if (N(total(hands[i]))<=21) return false; } return true; }
+function allPlayersBustedOnly(){ for (let i=0;i<activeSeatsCount;i++){ if (total(hands[i])<=21) return false; } return true; }
 
 async function settleAllBustedImmediately(){
   const plans=[];
   for (let i=0;i<activeSeatsCount;i++){
-    const bet=N(handBets[i])||0; if(!bet) continue;
+    const bet=handBets[i]||0; if(!bet) continue;
     const dbl=!!doubled[i];
-    if (N(total(hands[i]))>21) plans.push({seat:i,text:`– $${bet*(dbl?2:1)}`,cls:'lose'});
+    if (total(hands[i])>21) plans.push({seat:i,text:`– $${bet*(dbl?2:1)}`,cls:'lose'});
   }
   await showPayoutBubbles(plans);
   await endRoundFadeAndReset();
@@ -475,18 +463,18 @@ async function dealerPlayAndSettleAll(){
     await renderAndFly('dealer', hole);
   }
   while (true){
-    const t = N(total(dealer));
+    const t = total(dealer);
     if (t<17){
       const c=draw(); c.hidden=false; dealer.push(c);
       await renderAndFly('dealer', c);
     } else break;
   }
 
-  const d = N(total(dealer));
+  const d = Number.isFinite(Number(total(dealer))) ? Number(total(dealer)) : 0;
   const plans=[];
   for (let i=0;i<activeSeatsCount;i++){
-    const bet = N(handBets[i]); if(!bet||bet<=0) continue;
-    const p = N(total(hands[i]));
+    const bet = handBets[i]; if(!bet||bet<=0) continue;
+    const p = Number.isFinite(Number(total(hands[i]))) ? Number(total(hands[i])) : 0;
     const dbl = !!doubled[i];
     let plan;
     if (p>21){ plan={seat:i,text:`– $${bet*(dbl?2:1)}`,cls:'lose'}; }
@@ -537,11 +525,11 @@ async function endRoundFadeAndReset(){
 /* =============== Rebet =============== */
 function onRebet(){
   if (inRound) return;
-  if (!lastBets.slice(0,activeSeatsCount).some(v=>N(v)>0)) return;
+  if (!lastBets.slice(0,activeSeatsCount).some(v=>v>0)) return;
   handBets=[0,0,0];
   for(let i=0;i<activeSeatsCount;i++){
-    handBets[i]=N(lastBets[i])||0;
-    if (betPills[i]) betPills[i].textContent=`$${N(handBets[i])}`;
+    handBets[i]=lastBets[i]||0;
+    if (betPills[i]) betPills[i].textContent=`$${handBets[i]}`;
   }
   rebuildStacksFromBets();
   updateButtonsForState();
@@ -574,8 +562,7 @@ function bindChips(){
   chipBtns.forEach(btn=>{
     btn.addEventListener('click',()=>{
       if(inRound) return;
-      const val=Number(btn.getAttribute('data-value'));  // numeric
-      if (![5,20,50,100].includes(val)) return;
+      const val=parseInt(btn.getAttribute('data-value'),10);
       let idx=activeSeat; if(idx>=activeSeatsCount) idx=activeSeatsCount-1;
       addToBet(idx,val);
     });
