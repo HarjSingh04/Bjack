@@ -347,3 +347,116 @@ body{
   #seatToggle{ order:-1; justify-content:center; gap:10px }
   #seatToggle button{ padding:8px 12px }
 }
+/* ---------------- iPhone-friendly layout fixes ---------------- */
+@media (max-width: 520px){
+
+  /* Use safe-area and small viewport height for iOS toolbars */
+  :root{
+    --bar-gap: max(12px, env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Dealer area: compact */
+  #dealerArea{
+    margin: 8px auto 10px;
+    padding: 14px 10px 18px;
+    min-height: 18svh;
+  }
+  #dealerTray{ margin-top: 22px; }
+  #dealerTotal{ transform: translateY(-2px); }
+
+  /* Seats become a 1‑seat carousel with generous space */
+  #seatsArea{
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 90vw;
+    gap: 12px;
+
+    min-height: 60svh;
+    padding: 14px 5vw calc(110px + var(--bar-gap));
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+  }
+  #seatsArea::-webkit-scrollbar{ display:none; }
+
+  .seat{
+    scroll-snap-align: center;
+    min-height: 56svh;
+    position: relative;
+  }
+
+  /* Big dotted bet box */
+  .bet-box{
+    top: 10px; left: 10px; right: 10px; bottom: 74px;
+    background: url('assets/bet-box.svg') center/contain no-repeat;
+  }
+
+  /* Cards inside the box */
+  .seat .cards{
+    top: 22px; left: 22px; right: 22px; bottom: 104px;
+    display: flex; flex-wrap: wrap; gap: 8px;
+    justify-content: center; align-items: center;
+  }
+
+  /* Seat total badge */
+  .total{
+    top: 2px; font-size: 14px; padding: 2px 8px;
+  }
+
+  /* Bet stack host */
+  .seat .bet-stack{
+    left: 22px; right: 22px; transform: none;
+    width: auto; height: 64px; bottom: 16px;
+  }
+
+  /* Card sizes scale to screen */
+  .card       { width: clamp(56px, 17vw, 68px); height: clamp(78px, 22vw, 96px); }
+  .flying-card{ width: clamp(56px, 17vw, 68px); height: clamp(78px, 22vw, 96px); }
+
+  /* Sticky control bar at bottom */
+  #controlsArea{
+    position: fixed;
+    left: 0; right: 0; bottom: 0; z-index: 50;
+    padding: 10px max(8px, env(safe-area-inset-left))
+             calc(10px + var(--bar-gap))
+             max(8px, env(safe-area-inset-right));
+    background: linear-gradient(to top, rgba(0,0,0,.42), rgba(0,0,0,.22));
+    backdrop-filter: blur(8px);
+    display: grid; grid-template-columns: 1fr; row-gap: 10px;
+    pointer-events: none;   /* bar ignores taps */
+  }
+
+  /* groups are tappable */
+  #chipsArea, #seatToggle, #actionButtons{
+    pointer-events: auto;
+  }
+
+  /* Chips row */
+  #chipsArea{
+    display: flex; gap: 14px;
+    overflow-x: auto; padding: 0 6px 2px;
+  }
+  #chipsArea::-webkit-scrollbar{ display:none; }
+  #chipsArea .chip-img{
+    width: 64px; height: 64px; flex: 0 0 auto;
+  }
+
+  /* Seat toggles above buttons */
+  #seatToggle{
+    order: -1;
+    display: flex; justify-content: center; gap: 10px;
+  }
+
+  /* Action buttons in a grid */
+  #actionButtons{
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  }
+  #actionButtons .btn{
+    width: 100%; height: 48px; padding: 0;
+    font-size: 16px; border-radius: 12px;
+  }
+}
+
+/* Extra nudge for iOS */
+@supports (-webkit-touch-callout: none){
+  #seatsArea{ min-height: 62svh; }
+}
