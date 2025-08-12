@@ -1,4 +1,4 @@
-/* HS Blackjack — multi-seat + BJ autopay + shoe animation */
+/* HS Blackjack — multi-seat + BJ autopay + shoe animation (bank-safe rebet) */
 
 /* =============== DOM helpers =============== */
 const $  = (sel, root=document) => root.querySelector(sel);
@@ -60,11 +60,11 @@ const COIN_SVGS = {
   50:  'assets/chip-50.svg',
   100: 'assets/chip-100.svg'
 };
-const COIN_SIZE = 44;            // CSS scales on small screens
-const MAX_PER_STACK = 10;        // chips per pile before new pile
+const COIN_SIZE = 44;
+const MAX_PER_STACK = 10;
 const H_SPACING = COIN_SIZE * 0.80;
 const V_SPACING = COIN_SIZE * 0.22;
-const betCoins = [[],[],[]];     // [{value, el}, ...] per seat
+const betCoins = [[],[],[]];
 
 /* =============== Shoe / totals =============== */
 function freshDeck(){
@@ -98,7 +98,7 @@ function tenish(r){ return r==='10'||r==='J'||r==='Q'||r==='K'; }
 function canRanksSplit(h){ return h.length===2 && (h[0].r===h[1].r || (tenish(h[0].r)&&tenish(h[1].r))); }
 
 /* =============== Rendering =============== */
-function renderBank(){ bankEl.textContent = `$${playerBank}`; }
+function renderBank(){ if (bankEl) bankEl.textContent = `$${playerBank}`; }
 
 function cardNode(c){
   const div = document.createElement('div');
@@ -157,20 +157,17 @@ function shoeRect(){
   const r = shoeImg?.getBoundingClientRect();
   return r || {left:0, top:0, width:0, height:0};
 }
-/** Animate a temp card from shoe to the destination CARD element */
 async function flyFromShoeTo(destCardEl, card){
   if (!destCardEl) return;
   const ghost = makeFlyingCard(card);
   document.body.appendChild(ghost);
 
-  // start at shoe mouth
   const sr = shoeRect();
   const startX = sr.left + sr.width*0.75;
   const startY = sr.top  + sr.height*0.35;
   ghost.style.transform = `translate(${startX}px, ${startY}px) scale(.86)`;
   ghost.style.opacity = '0.85';
 
-  // end at destination card center
   await new Promise(r => requestAnimationFrame(r));
   const dr = destCardEl.getBoundingClientRect();
   const endX = dr.left + (dr.width - ghost.offsetWidth)/2;
@@ -185,7 +182,6 @@ async function flyFromShoeTo(destCardEl, card){
   await sleep(120);
   ghost.remove();
 }
-/** After we add a card to a hand, render and then animate the newest one */
 async function renderAndFly(handIdxOrDealer, card){
   if (handIdxOrDealer==='dealer'){
     renderDealer();
@@ -202,7 +198,7 @@ async function renderAndFly(handIdxOrDealer, card){
 function layoutBetCoins(seatIndex){
   const host = stacks[seatIndex]; if (!host) return;
   const coins = betCoins[seatIndex] || [];
-  const denoms = [5,20,50,100]; // order low→high for a natural look
+  const denoms = [5,20,50,100];
   const piles = [];
   const byVal = {5:[],20:[],50:[],100:[]};
   coins.forEach(c => byVal[c.value].push(c));
@@ -252,7 +248,10 @@ function rebuildStacksFromBets(){
 }
 function addToBet(i, amount){
   const want = handBets.slice(0,activeSeatsCount).reduce((a,b)=>a+b,0) + amount;
-  if (want > playerBank){ return; }
+  if (want > playerBank){
+    const tray = $('#chipsArea'); tray?.classList.add('shake'); setTimeout(()=> tray?.classList.remove('shake'), 250);
+    return;
+  }
   handBets[i] += amount;
   if (betPills[i]) betPills[i].textContent = `$${handBets[i]}`;
 
@@ -281,9 +280,15 @@ function addToBet(i, amount){
 }
 
 /* =============== Buttons =============== */
+function stageTotal(){ return handBets.slice(0,activeSeatsCount).reduce((a,b)=>a+b,0); }
+
 function updateButtonsForState(){
-  const anyStaged = handBets.slice(0,activeSeatsCount).some(v=>v>0);
-  dealBtn.disabled  = inRound || !anyStaged;
+  const staged = stageTotal();
+  const anyStaged = staged > 0;
+
+  // Guard: cannot Deal if staged exceeds bank
+  dealBtn.disabled  = inRound || !anyStaged || staged > playerBank;
+
   rebetBtn.disabled = inRound || !lastBets.slice(0,activeSeatsCount).some(v=>v>0);
 
   const h = hands[activeSeat] || [];
@@ -322,8 +327,6 @@ function updateButtonsForState(){
 async function slowRenderAll(){ renderDealer(); for (let i=0;i<activeSeatsCount;i++) renderSeat(i); await sleep(DEAL_MS); }
 
 /* =============== Round flow =============== */
-function stageTotal(){ return handBets.slice(0,activeSeatsCount).reduce((a,b)=>a+b,0); }
-
 async function onDeal(){
   if (inRound) return;
   const need = stageTotal(); if (need<=0 || need>playerBank) return;
@@ -337,16 +340,14 @@ async function onDeal(){
   clearNode(dealerCardsEl); dealerTotalEl.textContent='';
   for (let i=0;i<activeSeatsCount;i++){ clearNode(handEls[i]); totalEls[i].textContent=''; }
 
-  // P1..Pn (first)
+  // Deal sequence:
   for (let i=0;i<activeSeatsCount;i++){
     const c=draw(); c.hidden=false; hands[i].push(c);
     await renderAndFly(i, c);
     await sleep(DEAL_MS);
   }
-  // Dealer upcard
   const up = draw(); up.hidden=false; dealer.push(up);
   await renderAndFly('dealer', up); await sleep(DEAL_MS);
-  // P1..Pn (second)
   for (let i=0;i<activeSeatsCount;i++){
     const c=draw(); c.hidden=false; hands[i].push(c);
     await renderAndFly(i, c);
@@ -371,7 +372,6 @@ async function onDeal(){
     if (allBJ){ await endRoundFadeAndReset(); return; }
   }
 
-  // Move to first unfinished seat
   activeSeat = 0; while (activeSeat<activeSeatsCount && finished[activeSeat]) activeSeat++;
   renderAll();
   updateButtonsForState();
@@ -406,11 +406,9 @@ async function onSplit(){
   if (activeSeatsCount>=3) return;
   const stake = handBets[activeSeat]; if (playerBank<stake) return;
 
-  // Grow seats
   activeSeatsCount = Math.min(3, activeSeatsCount+1);
   applySeatLayout();
 
-  // Insert new hand right after current
   const insertAt = activeSeat + 1;
   for (let i=activeSeatsCount-1;i>insertAt;i--){
     hands[i]=hands[i-1]; handBets[i]=handBets[i-1]; finished[i]=finished[i-1]; doubled[i]=doubled[i-1];
@@ -432,8 +430,8 @@ async function onSplit(){
 
 /* =============== Turn progression =============== */
 function applySeatLayout(){
-  seatsArea.classList.remove('solo','duo','trio');
-  seatsArea.classList.add(activeSeatsCount===1?'solo':activeSeatsCount===2?'duo':'trio');
+  seatsArea.classList.remove('solo','duo','trio','arc');
+  seatsArea.classList.add('arc', activeSeatsCount===1?'solo':activeSeatsCount===2?'duo':'trio');
   for (let i=0;i<3;i++) seatRoots[i].style.display = (i<activeSeatsCount)?'':'none';
 }
 function nextUnfinishedSeat(fromIdx){ for (let i=fromIdx+1;i<activeSeatsCount;i++){ if(!finished[i]) return i; } return -1; }
@@ -522,17 +520,36 @@ async function endRoundFadeAndReset(){
   updateButtonsForState();
 }
 
-/* =============== Rebet =============== */
+/* =============== Rebet (bank‑aware) =============== */
 function onRebet(){
   if (inRound) return;
   if (!lastBets.slice(0,activeSeatsCount).some(v=>v>0)) return;
-  handBets=[0,0,0];
-  for(let i=0;i<activeSeatsCount;i++){
-    handBets[i]=lastBets[i]||0;
-    if (betPills[i]) betPills[i].textContent=`$${handBets[i]}`;
+
+  // Build as much of lastBets as the bank allows (left-to-right seats)
+  handBets = [0,0,0];
+  let remaining = playerBank;
+  let trimmed = false;
+
+  for (let i=0; i<activeSeatsCount; i++){
+    const want = lastBets[i] || 0;
+    const put  = Math.min(want, remaining);
+    handBets[i] = put;
+    if (put < want) trimmed = true;
+    remaining -= put;
+  }
+
+  // Update UI
+  for (let i=0;i<activeSeatsCount;i++){
+    if (betPills[i]) betPills[i].textContent = `$${handBets[i]||0}`;
   }
   rebuildStacksFromBets();
   updateButtonsForState();
+
+  if (trimmed){
+    const tray = $('#chipsArea');
+    tray?.classList.add('shake');
+    setTimeout(()=> tray?.classList.remove('shake'), 300);
+  }
 }
 
 /* =============== Binding =============== */
@@ -588,6 +605,7 @@ function bindSeatToggle(){
   });
 }
 
+/* =============== Boot =============== */
 function boot(){
   applySeatLayout();
   bindSeatClicks(); bindChips(); bindActions(); bindSeatToggle();
