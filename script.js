@@ -1,8 +1,9 @@
-/* HS Blackjack — stable multi-seat + BJ autopay */
+/* HS Blackjack — multi-seat + BJ autopay + shoe animation */
 
 /* =============== DOM helpers =============== */
 const $  = (sel, root=document) => root.querySelector(sel);
 const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
 
 /* =============== DOM refs =============== */
 const dealerCardsEl = $('#dealerCards');
@@ -13,7 +14,7 @@ const seatsArea     = $('#seatsArea');
 const seatRoots     = $$('.seat');
 const handEls       = [$('#hand1'), $('#hand2'), $('#hand3')];
 const totalEls      = [$('#total1'), $('#total2'), $('#total3')];
-const betPills      = seatRoots.map(r => r.querySelector('.bet'));       // hidden visually, but we update text
+const betPills      = [$('#bet1'), $('#bet2'), $('#bet3')];
 const stacks        = seatRoots.map(r => r.querySelector('.bet-stack'));
 
 const dealBtn    = $('#dealBtn');
@@ -28,7 +29,7 @@ const seatTogBtns= $$('#seatToggle button');
 
 /* =============== Config =============== */
 const DECKS       = 6;
-const DEAL_MS     = 260;   // per-card animation pacing
+const DEAL_MS     = 260;   // visual pacing between cards
 const END_FADE_MS = 420;
 const MAX_SEATS   = 3;
 
@@ -51,6 +52,19 @@ let doubled = [false,false,false];
 let handBets = [0,0,0];
 let lastBets = [0,0,0];
 let playerBank = 1000;
+
+/* ===== Chip art + stack rules ===== */
+const COIN_SVGS = {
+  5:   'assets/chip-5.svg',
+  20:  'assets/chip-20.svg',
+  50:  'assets/chip-50.svg',
+  100: 'assets/chip-100.svg'
+};
+const COIN_SIZE = 44;            // CSS scales on small screens
+const MAX_PER_STACK = 10;        // chips per pile before new pile
+const H_SPACING = COIN_SIZE * 0.80;
+const V_SPACING = COIN_SIZE * 0.22;
+const betCoins = [[],[],[]];     // [{value, el}, ...] per seat
 
 /* =============== Shoe / totals =============== */
 function freshDeck(){
@@ -125,25 +139,115 @@ function renderSeat(i){
 }
 function renderAll(){ renderDealer(); for (let i=0;i<MAX_SEATS;i++) renderSeat(i); updateButtonsForState(); }
 
+/* =============== Dealing shoe animation =============== */
+function makeFlyingCard(c){
+  const div = document.createElement('div');
+  div.className = 'flying-card';
+  if (c.hidden){ div.classList.add('back'); div.innerHTML = `<div class="big">🂠</div>`; return div; }
+  const red = (c.s==='♥'||c.s==='♦'); if (red) div.classList.add('red');
+  div.innerHTML = `
+    <div class="small">${c.r}</div>
+    <div class="big">${c.r}</div>
+    <div class="suit">${c.s}</div>
+  `;
+  return div;
+}
+function shoeRect(){
+  const shoeImg = $('#dealShoe');
+  const r = shoeImg?.getBoundingClientRect();
+  return r || {left:0, top:0, width:0, height:0};
+}
+/** Animate a temp card from shoe to the destination CARD element */
+async function flyFromShoeTo(destCardEl, card){
+  if (!destCardEl) return;
+  const ghost = makeFlyingCard(card);
+  document.body.appendChild(ghost);
+
+  // start at shoe mouth
+  const sr = shoeRect();
+  const startX = sr.left + sr.width*0.75;
+  const startY = sr.top  + sr.height*0.35;
+  ghost.style.transform = `translate(${startX}px, ${startY}px) scale(.86)`;
+  ghost.style.opacity = '0.85';
+
+  // end at destination card center
+  await new Promise(r => requestAnimationFrame(r));
+  const dr = destCardEl.getBoundingClientRect();
+  const endX = dr.left + (dr.width - ghost.offsetWidth)/2;
+  const endY = dr.top  + (dr.height - ghost.offsetHeight)/2;
+
+  await new Promise(r => requestAnimationFrame(r));
+  ghost.style.transform = `translate(${endX}px, ${endY}px) scale(1)`;
+  ghost.style.opacity = '1';
+
+  await sleep(220);
+  ghost.style.opacity = '0';
+  await sleep(120);
+  ghost.remove();
+}
+/** After we add a card to a hand, render and then animate the newest one */
+async function renderAndFly(handIdxOrDealer, card){
+  if (handIdxOrDealer==='dealer'){
+    renderDealer();
+    const last = dealerCardsEl.lastElementChild;
+    await flyFromShoeTo(last, card);
+  } else {
+    renderSeat(handIdxOrDealer);
+    const last = handEls[handIdxOrDealer].lastElementChild;
+    await flyFromShoeTo(last, card);
+  }
+}
+
 /* =============== Chips / bets UI =============== */
+function layoutBetCoins(seatIndex){
+  const host = stacks[seatIndex]; if (!host) return;
+  const coins = betCoins[seatIndex] || [];
+  const denoms = [5,20,50,100]; // order low→high for a natural look
+  const piles = [];
+  const byVal = {5:[],20:[],50:[],100:[]};
+  coins.forEach(c => byVal[c.value].push(c));
+  denoms.forEach(v=>{
+    const arr = byVal[v];
+    if (!arr.length) return;
+    for (let k=0;k<arr.length;k+=MAX_PER_STACK){
+      piles.push(arr.slice(k, k+MAX_PER_STACK));
+    }
+  });
+
+  const areaW = host.clientWidth || 1;
+  const totalWidth = (piles.length-1)*H_SPACING + COIN_SIZE;
+  const startX = Math.max(0, (areaW - totalWidth)/2);
+
+  piles.forEach((stack, pi)=>{
+    const baseX = startX + pi*H_SPACING;
+    stack.forEach((coinObj, ci)=>{
+      const x = baseX;
+      const y = (host.clientHeight - COIN_SIZE) - ci*V_SPACING;
+      const rot = (Math.random()*6 - 3).toFixed(1);
+      coinObj.el.style.transform = `translate(${x}px, ${y}px) rotate(${rot}deg)`;
+      coinObj.el.style.zIndex = 100 + pi*MAX_PER_STACK + ci;
+      coinObj.el.classList.add('in');
+    });
+  });
+}
 function rebuildStacksFromBets(){
   for (let i=0;i<activeSeatsCount;i++){
-    const s = stacks[i]; if (!s) continue;
-    s.innerHTML = '';
+    const host = stacks[i]; if (!host) continue;
+    host.innerHTML = '';
+    betCoins[i] = [];
     let r = handBets[i] || 0;
-    const pushMany = (v, cls)=>{
-      while (r >= v){
-        const t = document.createElement('div');
-        t.className = `chip-token ${cls} in locked`;
-        t.innerHTML = `<span>$${v}</span>`;
-        const n = s.children.length, x=(-4+(n%3)*4), y=n*6;
-        t.style.transform = `translate(${x}px, ${-y}px) scale(1)`;
-        t.style.zIndex = String(100+n);
-        s.appendChild(t);
-        r -= v;
+    const denoms = [100,50,20,5];
+    for (const d of denoms){
+      while (r >= d){
+        const el = document.createElement('div');
+        el.className = 'coin';
+        el.style.backgroundImage = `url('${COIN_SVGS[d]}')`;
+        host.appendChild(el);
+        betCoins[i].push({value:d, el});
+        r -= d;
       }
-    };
-    pushMany(100,'v100'); pushMany(50,'v50'); pushMany(20,'v20'); pushMany(5,'v5');
+    }
+    layoutBetCoins(i);
   }
 }
 function addToBet(i, amount){
@@ -154,17 +258,28 @@ function addToBet(i, amount){
   }
   handBets[i] += amount;
   if (betPills[i]) betPills[i].textContent = `$${handBets[i]}`;
-  const s = stacks[i];
-  if (s){
-    const t = document.createElement('div');
-    t.className = `chip-token v${amount}`;
-    t.innerHTML = `<span>$${amount}</span>`;
-    const n = s.children.length, x=(-4+(n%3)*4), y=n*6;
-    t.style.transform = `translate(${x}px, ${12-y}px) scale(.8)`;
-    t.style.zIndex = String(100+n);
-    s.appendChild(t);
-    requestAnimationFrame(()=>{ t.classList.add('in'); t.style.transform = `translate(${x}px, ${-y}px) scale(1)`; t.classList.add('locked'); });
+
+  const host = stacks[i];
+  if (host){
+    const coin = document.createElement('div');
+    coin.className = 'coin';
+    coin.style.backgroundImage = `url('${COIN_SVGS[amount]}')`;
+    host.appendChild(coin);
+    betCoins[i].push({value:amount, el:coin});
+
+    // fly from chip tray to bet box
+    const activeChipBtn = document.querySelector(`#chipsArea .chip-img[data-value="${amount}"]`);
+    if (activeChipBtn){
+      const from = activeChipBtn.getBoundingClientRect();
+      const to   = host.getBoundingClientRect();
+      const startX = from.left - to.left + from.width/2  - (COIN_SIZE/2);
+      const startY = from.top  - to.top  + from.height/2 - (COIN_SIZE/2);
+      coin.style.transform = `translate(${startX}px, ${startY}px) scale(.85)`;
+      coin.style.opacity = '0.85';
+      requestAnimationFrame(()=> coin.classList.add('in'));
+    }
   }
+  layoutBetCoins(i);
   updateButtonsForState();
 }
 
@@ -185,9 +300,6 @@ function updateButtonsForState(){
   doubleBtn.disabled = !canDouble;
   splitBtn.disabled  = !canSplit;
 
-  syncActionStyles();
-}
-function syncActionStyles(){
   ['dealBtn','rebetBtn','hitBtn','standBtn','doubleBtn','splitBtn'].forEach(id=>{
     const b = document.getElementById(id); if (b) b.classList.toggle('dimmed', b.disabled);
   });
@@ -210,7 +322,6 @@ function syncActionStyles(){
 })();
 
 /* =============== Anim helpers =============== */
-const sleep = ms => new Promise(r=>setTimeout(r,ms));
 async function slowRenderAll(){ renderDealer(); for (let i=0;i<activeSeatsCount;i++) renderSeat(i); await sleep(DEAL_MS); }
 
 /* =============== Round flow =============== */
@@ -229,12 +340,24 @@ async function onDeal(){
   clearNode(dealerCardsEl); dealerTotalEl.textContent='';
   for (let i=0;i<activeSeatsCount;i++){ clearNode(handEls[i]); totalEls[i].textContent=''; }
 
-  // Deal: P1..Pn, dealer up, P1..Pn
-  for (let i=0;i<activeSeatsCount;i++){ const c=draw(); c.hidden=false; hands[i].push(c); await slowRenderAll(); }
-  const up = draw(); up.hidden=false; dealer.push(up); await slowRenderAll();
-  for (let i=0;i<activeSeatsCount;i++){ const c=draw(); c.hidden=false; hands[i].push(c); await slowRenderAll(); }
+  // Deal sequence with fly animation:
+  // P1..Pn (first)
+  for (let i=0;i<activeSeatsCount;i++){
+    const c=draw(); c.hidden=false; hands[i].push(c);
+    await renderAndFly(i, c);
+    await sleep(DEAL_MS);
+  }
+  // Dealer upcard
+  const up = draw(); up.hidden=false; dealer.push(up);
+  await renderAndFly('dealer', up); await sleep(DEAL_MS);
+  // P1..Pn (second)
+  for (let i=0;i<activeSeatsCount;i++){
+    const c=draw(); c.hidden=false; hands[i].push(c);
+    await renderAndFly(i, c);
+    await sleep(DEAL_MS);
+  }
 
-  // Natural Blackjack autopay (3:2) immediately
+  // Natural Blackjack autopay (3:2)
   const bjPlans=[];
   for (let i=0;i<activeSeatsCount;i++){
     if (isBlackjack(hands[i])){
@@ -262,7 +385,7 @@ async function onHit(){
   if (!inRound || finished[activeSeat]) return;
   const h = hands[activeSeat]; if (total(h)>=21) return;
   const c = draw(); c.hidden=false; h.push(c);
-  await slowRenderAll();
+  await renderAndFly(activeSeat, c);
   if (total(h)>=21){ finished[activeSeat]=true; advanceSeatOrDealer(); }
   else updateButtonsForState();
 }
@@ -277,7 +400,7 @@ async function onDouble(){
   playerBank -= bet; handBets[activeSeat]+=bet; renderBank(); rebuildStacksFromBets();
   doubled[activeSeat]=true;
   const c = draw(); c.hidden=false; hands[activeSeat].push(c);
-  await slowRenderAll();
+  await renderAndFly(activeSeat, c);
   finished[activeSeat]=true; advanceSeatOrDealer();
 }
 async function onSplit(){
@@ -287,9 +410,11 @@ async function onSplit(){
   if (activeSeatsCount>=3) return;
   const stake = handBets[activeSeat]; if (playerBank<stake) return;
 
+  // Grow seats
   activeSeatsCount = Math.min(3, activeSeatsCount+1);
   applySeatLayout();
 
+  // Insert new hand right after current
   const insertAt = activeSeat + 1;
   for (let i=activeSeatsCount-1;i>insertAt;i--){
     hands[i]=hands[i-1]; handBets[i]=handBets[i-1]; finished[i]=finished[i-1]; doubled[i]=doubled[i-1];
@@ -304,8 +429,8 @@ async function onSplit(){
   for (let i=0;i<activeSeatsCount;i++){ if (betPills[i]) betPills[i].textContent = `$${handBets[i]||0}`; }
   rebuildStacksFromBets();
 
-  const c1 = draw(); c1.hidden=false; hands[activeSeat].push(c1); await slowRenderAll();
-  const c2 = draw(); c2.hidden=false; hands[insertAt].push(c2); await slowRenderAll();
+  const c1 = draw(); c1.hidden=false; hands[activeSeat].push(c1); await renderAndFly(activeSeat, c1);
+  const c2 = draw(); c2.hidden=false; hands[insertAt].push(c2); await renderAndFly(insertAt, c2);
   updateButtonsForState();
 }
 
@@ -339,12 +464,14 @@ function advanceSeatOrDealer(){
 async function dealerPlayAndSettleAll(){
   if (dealer.length===1){
     const hole = draw(); hole.hidden=false; dealer.push(hole);
-    await slowRenderAll();
+    await renderAndFly('dealer', hole);
   }
   while (true){
     const t = total(dealer);
-    if (t<17){ const c=draw(); c.hidden=false; dealer.push(c); await slowRenderAll(); }
-    else break;
+    if (t<17){
+      const c=draw(); c.hidden=false; dealer.push(c);
+      await renderAndFly('dealer', c);
+    } else break;
   }
 
   const d = Number.isFinite(Number(total(dealer))) ? Number(total(dealer)) : 0;
@@ -370,16 +497,17 @@ async function dealerPlayAndSettleAll(){
 async function showPayoutBubbles(plans){
   plans.forEach(p=>{
     const seat = seatRoots[p.seat];
-    let div = seat.querySelector('.payout');
-    if(!div){ div=document.createElement('div'); div.className='payout'; seat.appendChild(div); }
+    const anchor = seat.querySelector('.cards') || seat;
+    let div = anchor.querySelector('.payout');
+    if(!div){ div=document.createElement('div'); div.className='payout'; anchor.appendChild(div); }
     div.textContent=p.text;
     div.className=`payout ${p.cls}`;
     requestAnimationFrame(()=> div.classList.add('show'));
   });
   await sleep(1000);
   plans.forEach(p=>{
-    const seat = seatRoots[p.seat];
-    const div = seat.querySelector('.payout'); if(div) div.classList.remove('show');
+    const anchor = (seatRoots[p.seat].querySelector('.cards') || seatRoots[p.seat]);
+    const div = anchor.querySelector('.payout'); if(div) div.classList.remove('show');
   });
 }
 async function endRoundFadeAndReset(){
@@ -390,6 +518,7 @@ async function endRoundFadeAndReset(){
   dealer=[]; for(let i=0;i<MAX_SEATS;i++){ hands[i]=[]; finished[i]=false; doubled[i]=false; }
   clearNode(dealerCardsEl); dealerTotalEl.textContent='';
   handEls.forEach(el=> clearNode(el)); totalEls.forEach(el=> el.textContent='');
+  stacks.forEach(h => h && (h.innerHTML='')); betCoins.forEach(arr => arr.length=0);
 
   inRound=false; activeSeat=0;
   seatRoots.forEach(s=>s.classList.remove('fade-out'));
@@ -467,5 +596,6 @@ function boot(){
   applySeatLayout();
   bindSeatClicks(); bindChips(); bindActions(); bindSeatToggle();
   renderBank(); renderAll();
+  rebuildStacksFromBets();
 }
 document.addEventListener('DOMContentLoaded', boot);
