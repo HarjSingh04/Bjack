@@ -6,14 +6,15 @@
   <title>HS Blackjack</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
+<body data-theme="felt">
 
   <!-- Top bar -->
   <header id="topbar">
-    <div id="buildBadge">HS Blackjack</div>
-    <div id="playerBadge">
+    <div id="brand">HS Blackjack</div>
+    <div id="playerBadge" class="player-badge">
       <span class="tag">HS</span>
-      Player <b id="playerBank">$1000</b>
+      <span class="label">Player</span>
+      <span class="money" id="playerBank">$1000</span>
     </div>
   </header>
 
@@ -82,6 +83,13 @@
       </div>
     </div>
   </section>
+
+  <!-- (optional) insurance bar hook -->
+  <div id="insuranceBar" style="display:none">
+    Dealer shows Ace. Take Insurance?
+    <button id="insYes">Yes</button>
+    <button id="insNo">No</button>
+  </div>
 
   <script src="script.js"></script>
 </body>
