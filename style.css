@@ -233,3 +233,88 @@ body{
     bottom: clamp(18px, 3vh, 24px);
   }
 }
+/* ==== Mobile split-friendly layout (iPhone) ==== */
+@media (max-width: 520px){
+
+  /* Make seats a horizontal snap carousel: 1 seat per screen */
+  #seatsArea{
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 88vw;          /* seat width per page */
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 12px;
+    padding: 16px 6vw 120px;          /* extra bottom room for footer */
+    background-position: center top;
+  }
+  #seatsArea::-webkit-scrollbar{ display:none; }
+
+  .seat{
+    scroll-snap-align: center;
+    min-height: 62vh;
+    position: relative;
+  }
+
+  /* Keep cards inside dotted box with more breathing room */
+  .bet-box{ top: 10px; left: 10px; right: 10px; bottom: 10px; }
+  .seat .cards{
+    top: 24px; left: 24px; right: 24px; bottom: 68px;  /* lift off footer */
+  }
+  .seat .bet-stack{
+    left: 14px; bottom: 14px; transform: scale(.9);
+  }
+
+  /* Seat total badge – tuck just above the box */
+  .total{
+    top: -6px;
+    font-size: 12px;
+    padding: 2px 8px;
+  }
+
+  /* Dealer tray tighter so dealer total doesn't collide */
+  #dealerTray{ margin-top: 18px; }
+
+  /* Sticky footer: chips row + actions grid */
+  #controlBar{
+    position: sticky;
+    bottom: 0;
+    z-index: 50;
+    padding: 10px max(8px, env(safe-area-inset-left))
+             calc(10px + env(safe-area-inset-bottom))
+             max(8px, env(safe-area-inset-right));
+    backdrop-filter: blur(8px);
+    background: linear-gradient(to top, rgba(8,21,34,.92), rgba(8,21,34,.55));
+    display: grid;
+    grid-template-columns: 1fr;
+    row-gap: 10px;
+  }
+
+  /* Chips: scrollable row */
+  #chipsArea{
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 0 4px 2px;
+  }
+  #chipsArea::-webkit-scrollbar{ display:none; }
+  #chipsArea .chip-img{
+    width: 56px; height: 56px;
+    flex: 0 0 auto;
+  }
+
+  /* Action buttons: 2 rows, 3 per row */
+  #actionButtons{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  #actionButtons .btn{ width: 100%; padding: 11px 0; }
+
+  /* Seat toggle centered above buttons */
+  #seatToggle{
+    order: -1;
+    justify-content: center;
+    gap: 10px;
+  }
+  #seatToggle button{ padding: 8px 12px }
+}
