@@ -47,7 +47,6 @@ let activeSeat = 0;
 let hands   = [[],[],[]];
 let dealer  = [];
 let finished= [false,false,false];
-let doubled = [false,false,false];
 
 let handBets = [0,0,0];
 let lastBets = [0,0,0];
@@ -334,7 +333,7 @@ async function onDeal(){
   // Lock stakes
   lastBets = handBets.slice(0,activeSeatsCount);
   playerBank -= need; renderBank();
-  inRound = true; finished=[false,false,false]; doubled=[false,false,false];
+  inRound = true; finished=[false,false,false];
   dealer = []; hands=[[],[],[]]; activeSeat = 0;
 
   clearNode(dealerCardsEl); dealerTotalEl.textContent='';
@@ -394,7 +393,6 @@ async function onDouble(){
   const bet = handBets[activeSeat];
   if (hands[activeSeat].length!==2 || playerBank<bet) return;
   playerBank -= bet; handBets[activeSeat]+=bet; renderBank(); rebuildStacksFromBets();
-  doubled[activeSeat]=true;
   const c = draw(); c.hidden=false; hands[activeSeat].push(c);
   await renderAndFly(activeSeat, c);
   finished[activeSeat]=true; advanceSeatOrDealer();
@@ -411,11 +409,11 @@ async function onSplit(){
 
   const insertAt = activeSeat + 1;
   for (let i=activeSeatsCount-1;i>insertAt;i--){
-    hands[i]=hands[i-1]; handBets[i]=handBets[i-1]; finished[i]=finished[i-1]; doubled[i]=doubled[i-1];
+    hands[i]=hands[i-1]; handBets[i]=handBets[i-1]; finished[i]=finished[i-1];
   }
   const moved = h.pop();
   hands[insertAt] = [moved];
-  finished[insertAt]=false; doubled[insertAt]=false;
+  finished[insertAt]=false;
 
   handBets[insertAt] = stake;
   playerBank -= stake; renderBank();
@@ -441,8 +439,7 @@ async function settleAllBustedImmediately(){
   const plans=[];
   for (let i=0;i<activeSeatsCount;i++){
     const bet=handBets[i]||0; if(!bet) continue;
-    const dbl=!!doubled[i];
-    if (total(hands[i])>21) plans.push({seat:i,text:`– $${bet*(dbl?2:1)}`,cls:'lose'});
+    if (total(hands[i])>21) plans.push({seat:i,text:`– $${bet}`,cls:'lose'});
   }
   await showPayoutBubbles(plans);
   await endRoundFadeAndReset();
@@ -473,13 +470,12 @@ async function dealerPlayAndSettleAll(){
   for (let i=0;i<activeSeatsCount;i++){
     const bet = handBets[i]; if(!bet||bet<=0) continue;
     const p = Number.isFinite(Number(total(hands[i]))) ? Number(total(hands[i])) : 0;
-    const dbl = !!doubled[i];
     let plan;
-    if (p>21){ plan={seat:i,text:`– $${bet*(dbl?2:1)}`,cls:'lose'}; }
-    else if (d>21){ playerBank+=bet*(dbl?4:2); plan={seat:i,text:`+ $${bet*(dbl?2:1)}`,cls:'win'}; }
-    else if (p>d){ playerBank+=bet*(dbl?4:2); plan={seat:i,text:`+ $${bet*(dbl?2:1)}`,cls:'win'}; }
-    else if (p===d){ playerBank+=bet*(dbl?2:1); plan={seat:i,text:`Push`,cls:'push'}; }
-    else { plan={seat:i,text:`– $${bet*(dbl?2:1)}`,cls:'lose'}; }
+    if (p>21){ plan={seat:i,text:`– $${bet}`,cls:'lose'}; }
+    else if (d>21){ playerBank+=bet*2; plan={seat:i,text:`+ $${bet}`,cls:'win'}; }
+    else if (p>d){ playerBank+=bet*2; plan={seat:i,text:`+ $${bet}`,cls:'win'}; }
+    else if (p===d){ playerBank+=bet; plan={seat:i,text:`Push`,cls:'push'}; }
+    else { plan={seat:i,text:`– $${bet}`,cls:'lose'}; }
     plans.push(plan);
   }
   renderBank();
@@ -509,7 +505,7 @@ async function endRoundFadeAndReset(){
   seatRoots.forEach(s=>s.classList.add('fade-out'));
   await sleep(END_FADE_MS);
 
-  dealer=[]; for(let i=0;i<MAX_SEATS;i++){ hands[i]=[]; finished[i]=false; doubled[i]=false; }
+  dealer=[]; for(let i=0;i<MAX_SEATS;i++){ hands[i]=[]; finished[i]=false; }
   clearNode(dealerCardsEl); dealerTotalEl.textContent='';
   handEls.forEach(el=> clearNode(el)); totalEls.forEach(el=> el.textContent='');
   stacks.forEach(h => h && (h.innerHTML='')); betCoins.forEach(arr => arr.length=0);
