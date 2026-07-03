@@ -1,460 +1,541 @@
+/* ===================== THEME & BASE ===================== */
 *{box-sizing:border-box}
 html,body{height:100%}
 html{-webkit-text-size-adjust:100%}
-
 :root{
-  --bg:#1a0b09;
-  --text:#f8f6ef;
-  --line:#ffffff22;
-  --ink:#1d3d2b;
+  --bg:#1a0510; --panel:#2d0a18; --felt-1:#6b0f2266; --felt-2:#3d06128a;
+  --ink:#3d0a14; --line:#ff6b8844; --text:#fff0f3;
+  --gold:#ffd700; --cream:#fff8e7; --accent:#c0395a;
+}
+
+body[data-theme="felt"]{
+  --bg:#1a0510;
+  --panel:#2d0a18;
+  --felt-1:#6b0f2266;
+  --felt-2:#3d06128a;
+  --ink:#3d0a14;
+  --line:#ff6b8844;
+  --text:#fff0f3;
+  --gold:#ffd700;
+  --cream:#fff8e7;
+  --accent:#c0395a;
 }
 
 body{
   margin:0;
   font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+  background:var(--bg);
   color:var(--text);
-  background:
-    radial-gradient(120% 90% at 50% -15%, #5a1f16 0%, transparent 50%),
-    radial-gradient(140% 120% at 50% 120%, #130606 0%, #080303 60%, #050202 100%);
   overflow-x:hidden;
   user-select:none;
-  padding-bottom:140px;
+  padding-bottom: 120px; /* room for sticky controls on iOS */
 }
 
+/* ===================== HEADER ===================== */
 #topbar{
-  position:relative;
-  z-index:40;
-  max-width:1100px;
-  margin:10px auto 0;
-  padding:8px max(12px,env(safe-area-inset-left)) 10px max(12px,env(safe-area-inset-right));
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
+  position:relative; z-index:50;
+  max-width:1100px; margin:10px auto 6px;
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding-left: calc(14px + env(safe-area-inset-left,0px));
+  padding-right: calc(14px + env(safe-area-inset-right,0px));
+  background:transparent;
 }
-#brand{font-size:clamp(18px,2.3vw,24px);font-weight:900;letter-spacing:.2px}
-
-.stats-badge {
-  display:inline-flex; align-items:center; gap:8px;
-  padding:6px 12px; border-radius:999px;
-  background: linear-gradient(180deg, #1a3a2a, #0d2618);
-  border: 1px solid #ffffff22;
-  color: #aaffcc; font-weight: 700; font-size: 13px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+#brand{
+  font-weight:800; letter-spacing:.2px;
+  font-size:clamp(16px,2.2vw,22px);
+  color:var(--gold);
+  text-shadow:0 1px 8px rgba(255,215,0,0.3);
+  white-space:nowrap;
 }
-.stats-badge b{font-weight:800;color:#d8ffe9}
-
 .player-badge{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding:6px 12px;
-  border-radius:999px;
-  background:linear-gradient(180deg,#3b1914,#23100c);
-  border:1px solid #ffffff26;
-  box-shadow:0 5px 14px rgba(0,0,0,.35);
+  display:inline-flex; align-items:center; gap:10px;
+  padding:8px 12px; border-radius:999px;
+  background:
+    radial-gradient(120% 160% at 15% 30%, #ffffff1a, transparent 50%),
+    linear-gradient(180deg, #5c0f28, #3d0a1c);
+  border:1px solid #ff6b8833;
+  box-shadow:0 6px 18px rgba(0,0,0,.4), inset 0 0 0 1px #c0395a33;
+  color:#fff0f3; max-width:min(68vw,420px); overflow:hidden;
 }
 .player-badge .tag{
-  width:28px;height:28px;border-radius:50%;display:grid;place-items:center;
-  font-weight:900;color:#200b06;background:linear-gradient(180deg,#ffe1bf,#f0a55c)
+  display:grid; place-items:center;
+  width:30px; height:30px; border-radius:999px;
+  font-weight:900;
+  background:radial-gradient(circle at 30% 30%, #ff8fa3, #c0395a);
+  color:#1a0010; box-shadow:0 2px 6px rgba(0,0,0,.3);
+  flex:0 0 auto;
 }
-.player-badge .label{font-weight:700;opacity:.9}
+.player-badge .label{ opacity:.9; font-weight:700; white-space:nowrap; }
 .player-badge .money{
-  font-weight:900;
-  padding:2px 8px;
-  border-radius:8px;
-  background:#2d140f;
-  border:1px solid #ffffff1f;
+  margin-left:2px; font-weight:900; letter-spacing:.2px;
+  padding:2px 8px; border-radius:8px;
+  background:var(--ink); border:1px solid #ff6b8822;
+  box-shadow:inset 0 0 0 1px #c0395a44; white-space:nowrap;
+}
+.stats-badge{
+  display:inline-flex; align-items:center; gap:10px;
+  padding:8px 12px; border-radius:999px;
+  background:linear-gradient(180deg, #3d0a18, #1a0510);
+  border:1px solid #ff6b8822;
+  box-shadow:0 6px 18px rgba(0,0,0,.35), inset 0 0 0 1px #c0395a33;
+  color:#ffaabb;
+  font-weight:700;
+  white-space:nowrap;
+}
+.stats-badge b{
+  display:inline-grid; place-items:center; min-width:22px;
+  margin-left:4px; padding:1px 6px; border-radius:8px;
+  background:var(--ink); border:1px solid #ff6b8822;
+  box-shadow:inset 0 0 0 1px #c0395a44;
+}
+@media (max-width:420px){
+  .player-badge{ gap:8px; padding:6px 10px;
+    max-width:calc(100vw - (env(safe-area-inset-left,0px)+env(safe-area-inset-right,0px)+24px));
+  }
+  .player-badge .label{ display:none; }
+  .player-badge .money{ padding:2px 6px; }
+  .stats-badge{ gap:8px; padding:6px 10px; font-size:13px; }
+  .stats-badge b{ min-width:18px; padding:1px 5px; }
 }
 
-#casinoTable{
-  position:relative;
-  max-width:1120px;
-  margin:0 auto;
-  padding:58px 10px 0;
+/* ===================== DEALER AREA ===================== */
+#dealerArea{
+  position:relative; max-width:1100px; margin:8px auto; padding:26px 12px 42px;
+  background:
+    radial-gradient(ellipse at 50% 30%, #7a1428, #3d0612),
+    radial-gradient(120% 120% at 50% 120%, rgba(0,0,0,.45), transparent 65%);
+  border:1px dashed var(--line); border-radius:18px; overflow:hidden;
 }
 
-#dealerZone{
-  position:absolute;
-  top:0;
-  left:50%;
-  transform:translateX(-50%);
-  z-index:30;
-  display:flex;
-  align-items:flex-end;
-  justify-content:center;
-  gap:10px;
-  width:min(94vw,760px);
-}
-#dealerAvatar{
-  height:clamp(140px,22vh,200px);
-  width:auto;
-  filter:drop-shadow(0 8px 14px rgba(0,0,0,.35));
-}
-#dealerCardsWrap{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  margin-bottom:8px;
-}
-#dealerCards{display:flex;gap:8px;min-height:104px;align-items:center}
-#dealerTotal{
-  min-width:34px;
-  text-align:center;
-  font-weight:900;
-  padding:4px 10px;
-  border-radius:10px;
-  background:#183323;
-  border:1px solid #ffffff2f;
-}
-
-#feltSurface{
-  position:relative;
-  width:min(98vw,1100px);
-  min-height:min(72vh,560px);
-  margin:0 auto;
-  padding:130px 20px 28px;
-  background:radial-gradient(ellipse at 50% 30%, #1a6b3a, #0a3d1f);
-  border:1px solid #ffffff2a;
-  border-bottom:18px solid #3d1f0a;
-  border-radius:50% 50% 0 0 / 60% 60% 0 0;
-  box-shadow:0 8px 40px rgba(0,0,0,.6), inset 0 0 0 1px #ffffff14;
-  overflow:hidden;
-}
-#feltSurface::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  background:radial-gradient(120% 75% at 50% 85%, #00000040, transparent 60%);
-  pointer-events:none;
-}
-
+/* ===== CSS‑only dealing shoe (no image) ===== */
 .deal-shoe{
+  --w: 170px;                 /* desktop width */
   position:absolute;
-  right:20px;
-  top:88px;
-  width:140px;
-  aspect-ratio:2.2/1;
-  border-radius:14px;
-  background:linear-gradient(180deg,#3b2f2f,#191212);
-  box-shadow:0 10px 22px rgba(0,0,0,.45), inset 0 0 0 1px #ffffff14;
-  z-index:4;
+  right:16px; top:14px;
+  width:var(--w); aspect-ratio: 2.2 / 1;  /* body of shoe */
+  border-radius: 12px 16px 16px 12px;
+  background: linear-gradient(180deg, #2d1008, #1a0804);
+  box-shadow: 0 10px 24px rgba(0,0,0,.35), inset 0 0 0 1px #ffffff18;
+  z-index:12; pointer-events:none;
+}
+.deal-shoe::after{
+  content:""; position:absolute; right:6%; top:18%;
+  width:34%; height:64%; border-radius:10px;
+  background: linear-gradient(180deg, #6b1a08, #4a1005);
+  box-shadow: inset 0 0 0 1px #ffffff33, inset 0 -10px 16px rgba(0,0,0,.25);
 }
 .deal-shoe::before{
-  content:"";
-  position:absolute;
-  right:10%;top:20%;width:30%;height:56%;border-radius:8px;
-  background:repeating-linear-gradient(90deg,#efe7da 0 3px,#ddd2c3 3px 6px);
-  box-shadow:inset 0 0 0 1px #ffffff6a;
+  content:""; position:absolute; right:12%; top:24%;
+  width:30%; height:54%; border-radius:8px;
+  background: repeating-linear-gradient(90deg,#f8e8d2 0 3px,#e3c59e 3px 6px);
+  filter: brightness(.96); box-shadow: inset 0 0 0 1px #ffffff55;
+}
+@media (max-width: 520px){
+  .deal-shoe{ --w: 120px; right:10px; top:10px; }
 }
 
+/* dealer tray: cards + total together */
+#dealerTray{ display:flex; align-items:center; justify-content:center; gap:10px; margin-top:46px }
+#dealerCards{ display:flex; gap:8px }
+#dealerTotal{
+  background:#3d0a14; border:1px solid #ff6b8833; border-radius:10px;
+  color:#fff0f3;
+  padding:4px 10px; font-weight:800; min-width:34px; text-align:center
+}
+
+/* ===================== SEATS / TABLE ===================== */
 #seatsArea{
-  position:relative;
-  z-index:6;
-  display:flex;
-  justify-content:center;
-  align-items:stretch;
-  gap:clamp(10px,2vw,24px);
-  margin-top:130px;
+  position:relative; max-width:1100px; margin:12px auto 0; padding:24px 16px 26px;
+  background:
+    radial-gradient(ellipse at 50% 30%, #7a1428, #3d0612),
+    radial-gradient(120% 120% at 50% 120%, rgba(0,0,0,.45), transparent 65%);
+  border:1px dashed var(--line); border-radius:18px; min-height:380px;
+  display:grid; gap:18px;
 }
+#seatsArea.solo{grid-template-columns:1fr}
+#seatsArea.duo {grid-template-columns:repeat(2,1fr)}
+#seatsArea.trio{grid-template-columns:repeat(3,1fr)}
+#seatsArea.solo .seat{ width:clamp(320px,42vw,520px); margin:0 auto }
 
-.seat{
-  position:relative;
-  width:clamp(200px,22vw,260px);
-  min-height:clamp(200px,26vh,280px);
-  border-radius:18px;
-}
+.seat{ position:relative; min-height:260px; border-radius:16px }
+.seat.fade-out{ opacity:0; transition:opacity .35s ease }
 
-.total{
-  position:absolute;
-  top:-10px;
-  left:50%;
-  transform:translateX(-50%);
-  min-width:34px;
-  text-align:center;
-  font-weight:900;
-  padding:3px 10px;
-  border-radius:10px;
-  background:#143325;
-  border:1px solid #ffffff2a;
-  z-index:6;
-}
+/* Dotted bet area */
 .bet-box{
-  position:absolute;
-  inset:12px 12px 52px;
+  position:absolute; top:18px; left:18px; right:18px; bottom:18px;
   background:url('assets/bet-box.svg') center/contain no-repeat;
-  z-index:2;
+  z-index:2; transition:transform .12s ease, filter .12s ease
 }
+.seat.active .bet-box{ filter:drop-shadow(0 0 10px rgba(255,107,136,.4)) }
+.bet-box:active{ transform:scale(.985) }
+
+/* Cards live INSIDE the dotted box */
 .seat .cards{
-  position:absolute;
-  inset:26px 26px 84px;
-  display:flex;
-  flex-wrap:wrap;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  z-index:4;
+  position:absolute; top:34px; left:34px; right:34px; bottom:30px;
+  display:flex; flex-wrap:wrap; gap:8px; justify-content:center; align-items:center; z-index:4
 }
-.seat .bet-stack{
-  position:absolute;
-  left:50%;
-  transform:translateX(-50%);
-  bottom:56px;
-  width:70%;
-  height:38%;
-  pointer-events:none;
-  z-index:5;
+
+/* Seat total badge */
+.total{
+  position:absolute; top:6px; left:50%; transform:translateX(-50%);
+  background:#3d0a14; border:1px solid #ff6b8833; border-radius:10px;
+  color:#fff0f3;
+  padding:2px 10px; font-weight:800; z-index:5
 }
+
 .bet-pill{
-  position:absolute;
-  left:50%;
-  transform:translateX(-50%);
-  bottom:10px;
-  padding:4px 10px;
-  border-radius:999px;
-  font-weight:800;
-  background:#153626;
-  border:1px solid #ffffff30;
-  z-index:7;
+  background:#3d0a14;
+  border:1px solid #ff6b8833;
+  color:#ffd700;
 }
 
-#chairsRow{
-  display:flex;
-  justify-content:space-evenly;
-  align-items:flex-start;
-  gap:clamp(10px,4vw,34px);
-  width:min(98vw,980px);
-  margin:12px auto 0;
-  padding:0 8px;
-}
-.chair{
-  position:relative;
-  width:clamp(100px,13vw,150px);
-  height:clamp(48px,7vh,72px);
-  background:linear-gradient(180deg,#3d1a06,#1a0a00);
-  border-radius:14px 14px 6px 6px;
-  box-shadow:0 6px 18px rgba(0,0,0,.5);
-  transform:perspective(200px) rotateX(10deg);
-}
-.chair::before{
-  content:"";
-  position:absolute;
-  left:6px;
-  right:6px;
-  top:5px;
-  height:30%;
-  border-radius:12px 12px 0 0;
-  background:linear-gradient(180deg,#7a3d12,#5c2a08);
-}
-[data-seats="1"] .chair-2,[data-seats="1"] .chair-3{display:none}
-[data-seats="2"] .chair-3{display:none}
-
-#controlBar{
-  position:fixed;
-  left:0;
-  right:0;
-  bottom:0;
-  z-index:1200;
-  display:grid;
-  grid-template-columns:1fr auto auto;
-  align-items:center;
-  gap:12px;
-  padding:10px max(10px,env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-right));
-  background:linear-gradient(to top,rgba(22,6,6,.96),rgba(22,6,6,.7));
-  backdrop-filter:blur(8px);
+/* Bet stack host (center-bottom of bet box area) */
+.seat .bet-stack{
+  position:absolute; left:50%; transform:translateX(-50%);
+  bottom:8px; width:60%; height:38%; pointer-events:none; z-index:5;
 }
 
-#chipsArea{display:flex;gap:10px;align-items:center;overflow-x:auto}
-#chipsArea::-webkit-scrollbar{display:none}
-
-#seatToggle{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
-#actionButtons{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
-
-#chipsArea .chip-img{
-  width:clamp(56px,7vw,72px);
-  height:clamp(56px,7vw,72px);
-  border:none;
-  border-radius:50%;
-  background-color:transparent;
-  background-repeat:no-repeat;
-  background-position:center;
-  background-size:contain;
-  position:relative;
-}
-#chipsArea .chip-img span{position:absolute;inset:0;color:transparent;font-size:0;line-height:0}
-#chipsArea .chip-img[data-value="5"]{background-image:url('assets/chip-5.svg')}
-#chipsArea .chip-img[data-value="20"]{background-image:url('assets/chip-20.svg')}
-#chipsArea .chip-img[data-value="50"]{background-image:url('assets/chip-50.svg')}
-#chipsArea .chip-img[data-value="100"]{background-image:url('assets/chip-100.svg')}
-
-.btn{
-  --bg:#3a1712; --txt:#fff5ed;
-  border:none;
-  border-radius:12px;
-  color:var(--txt);
-  background:linear-gradient(180deg,#4a211a,var(--bg));
-  font-weight:900;
-  padding:10px 14px;
-  box-shadow:0 4px 0 #1a0a07,0 8px 16px rgba(0,0,0,.28), inset 0 0 0 1px #ffffff18;
-  transition:transform .08s ease,filter .12s ease;
-}
-.btn:hover:not(.dimmed):not(:disabled){transform:translateY(-1px);filter:brightness(1.08)}
-.btn:active:not(.dimmed):not(:disabled){transform:translateY(1px)}
-.btn.dimmed,.btn:disabled{opacity:.45;cursor:not-allowed}
-.btn.primary{--bg:#6b2918}
-.btn.accent{--bg:#3f223e}
-.btn.safe{--bg:#1e4a33}
-.btn.gold{--bg:#73510d}
-.btn.violet{--bg:#45206c}
-
+/* ===================== CARDS ===================== */
 .card{
-  position:relative;
-  width:66px;
-  height:96px;
-  border-radius:10px;
-  background:#fffef5;
-  color:#2b1a10;
-  display:grid;
-  place-items:center;
-  box-shadow:0 12px 18px rgba(0,0,0,.25);
-  transition:transform .18s ease,opacity .18s ease;
+  width:66px; height:96px; border-radius:10px;
+  background:linear-gradient(145deg, #fffef5, #fff8e7);
+  color:#1a0010; border:1px solid #e8d5b0; display:grid; place-items:center;
+  box-shadow:0 8px 20px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.3); transition:transform .18s ease, opacity .18s ease
 }
-.card.red{color:#b5283d}
-.card.back{background:linear-gradient(135deg,#5a1b26 0%,#7a2735 100%);color:#fff8ef}
-.card .small{position:absolute;top:6px;left:6px;font-size:12px;font-weight:800}
-.card .big{font-size:24px;font-weight:800;line-height:1}
-.card .suit{position:absolute;bottom:6px;right:6px;font-size:12px}
-.card.deal-slow{opacity:0;transform:translateY(-10px) scale(.95)}
-.card.deal-slow.show{opacity:1;transform:translateY(0) scale(1)}
+.card.red{ color:#8b0000 }
+.card.back{ background:linear-gradient(135deg, #5c0f1a 0%, #3d0a12 50%, #5c0f1a 100%); color:#fff }
+.card .small{ position:absolute; top:6px; left:6px; font-size:12px; font-weight:800 }
+.card .big{ font-size:24px; font-weight:800; line-height:1 }
+.card .suit{ position:absolute; bottom:6px; right:6px; font-size:12px }
+.card.deal-slow{ opacity:0; transform:translateY(-10px) scale(.95) }
+.card.deal-slow.show{ opacity:1; transform:translateY(0) scale(1) }
 
+/* Flying card (shoe animation) */
 .flying-card{
-  position:fixed;
-  left:0;
-  top:0;
-  width:66px;
-  height:96px;
-  z-index:999;
+  position:fixed; left:0; top:0; width:66px; height:96px; z-index:999;
   border-radius:10px;
-  background:#fffef5;
-  color:#2b1a10;
-  display:grid;
-  place-items:center;
-  box-shadow:0 12px 18px rgba(0,0,0,.25);
-  transition:transform .28s cubic-bezier(.22,.9,.2,1),opacity .18s ease;
-  will-change:transform,opacity;
+  background:linear-gradient(145deg, #fffef5, #fff8e7);
+  color:#1a0010; border:1px solid #e8d5b0; display:grid; place-items:center;
+  box-shadow:0 8px 20px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.3);
+  transition: transform .28s cubic-bezier(.22,.9,.2,1), opacity .18s ease;
+  will-change: transform, opacity;
 }
-.flying-card.red{color:#b5283d}
-.flying-card.back{background:linear-gradient(135deg,#5a1b26 0%,#7a2735 100%);color:#fff8ef}
-.flying-card .small{position:absolute;top:6px;left:6px;font-size:12px;font-weight:800}
-.flying-card .big{font-size:24px;font-weight:800}
-.flying-card .suit{position:absolute;bottom:6px;right:6px;font-size:12px}
+.flying-card.red{ color:#8b0000 }
+.flying-card.back{ background:linear-gradient(135deg, #5c0f1a 0%, #3d0a12 50%, #5c0f1a 100%); color:#fff }
+.flying-card .small{ position:absolute; top:6px; left:6px; font-size:12px; font-weight:800 }
+.flying-card .big{ font-size:24px; font-weight:800 }
+.flying-card .suit{ position:absolute; bottom:6px; right:6px; font-size:12px }
 
+/* ===================== PAYOUT BUBBLE ===================== */
 .payout{
-  position:absolute;
-  top:50%;
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scale(.9);
+  background:#2d0a18; border:1px solid #ff6b8855; border-radius:999px;
+  padding:8px 16px; font-weight:800; opacity:0; z-index:6;
+  transition:transform .16s ease, opacity .16s ease
+}
+.payout.show{ opacity:1; transform:translate(-50%,-50%) scale(1) }
+.payout.win{ color:#ffd700 } .payout.push{ color:#b0b8ff } .payout.lose{ color:#ff8a8a }
+
+#reshuffleToast{
+  position:fixed;
+  top:16px;
   left:50%;
-  transform:translate(-50%,-50%) scale(.9);
-  background:#1f3528;
-  border:1px solid #2dd4bf66;
+  transform:translateX(-50%) translateY(-8px);
+  padding:8px 14px;
   border-radius:999px;
-  padding:8px 16px;
-  font-weight:800;
+  background:rgba(60,8,20,.92);
+  color:#ffaabb;
+  border:1px solid #c0395a;
+  font-weight:700;
   opacity:0;
-  z-index:6;
-  transition:transform .16s ease,opacity .16s ease;
+  pointer-events:none;
+  z-index:2000;
+  transition:opacity .2s ease, transform .2s ease;
 }
-.payout.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
-.payout.win{color:#67f6d1}
-.payout.push{color:#c5d7ff}
-.payout.lose{color:#ff9f9f}
+#reshuffleToast.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
 
+#bankruptOverlay{
+  position:fixed;
+  inset:0;
+  display:none;
+  place-items:center;
+  background:rgba(26,5,16,.82);
+  z-index:2500;
+}
+#bankruptOverlay.show{ display:grid; }
+#bankruptOverlay .panel{
+  width:min(92vw,420px);
+  border-radius:16px;
+  border:1px solid #c0395a55;
+  background:#1a0510;
+  box-shadow:0 18px 36px rgba(0,0,0,.45), inset 0 0 0 1px #c0395a2e;
+  padding:20px;
+  text-align:center;
+}
+#bankruptOverlay .title{
+  font-size:clamp(24px,4vw,34px);
+  font-weight:900;
+  margin-bottom:14px;
+  color:#ff6b88;
+}
+
+/* ===================== CONTROL BAR ===================== */
+#controlBar{
+  max-width:1100px; margin:12px auto; display:flex; align-items:center; gap:12px;
+  justify-content:space-between; flex-wrap:wrap; padding:0 8px
+}
+#chipsArea{ display:flex; gap:10px; align-items:center }
+#seatToggle{ display:flex; gap:8px; justify-content:center; flex:1 }
+#seatToggle button{ border:none; border-radius:10px; padding:8px 10px; background:#2d0a18; color:#fff0f3 }
+#seatToggle button.active{ background:#7a0f28; color:#fff8e7 }
+#actionButtons{ display:flex; gap:12px; align-items:center }
+
+#controlsArea{
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 1000; /* above everything */
+
+  width: min(100%, 920px);
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(26,5,16,.58);
+  box-shadow: 0 8px 28px rgba(0,0,0,.35);
+  backdrop-filter: blur(8px);
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  pointer-events: none;
+}
+#chipsArea, #seatToggle, #actionButtons{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+/* Buttons look */
+.btn{
+  --bg:#3d0a18; --gl:#ff6b88; --txt:#fff0f3;
+  position:relative; border:none; color:var(--txt);
+  background:linear-gradient(180deg,#5c1228,var(--bg));
+  padding:10px 16px; border-radius:12px; font-weight:900; letter-spacing:.2px;
+  box-shadow:0 4px 0 #1a0510,0 0 0 1px #6b0f22 inset,0 12px 24px rgba(0,0,0,.35);
+  transform:translateY(0); transition:transform .08s ease, box-shadow .12s ease, filter .12s ease
+}
+.btn:hover:not(.dimmed){ transform:translateY(-2px); filter:brightness(1.08) }
+.btn:active:not(.dimmed){ transform:translateY(1px); box-shadow:0 2px 0 #14030b,0 0 0 1px #6b0f22 inset }
+.btn.dimmed, .btn:disabled{ opacity:.45; cursor:not-allowed; filter:grayscale(.15);
+  box-shadow:0 2px 0 #11040a,0 0 0 1px #6b0f22 inset }
+.btn.primary{ --bg:#7a0f28 } .btn.accent{ --bg:#3d1040 } .btn.safe{ --bg:#1a3d1a }
+.btn.gold{ --bg:#5a3a08 } .btn.violet{ --bg:#3a1060 }
+.btn:not(.dimmed)::after{
+  content:''; position:absolute; inset:-2px; border-radius:14px;
+  box-shadow:0 0 0 0 rgba(255,107,136,.65), 0 0 24px 6px color-mix(in oklab,var(--gl),transparent 45%);
+  opacity:.9; pointer-events:none; transition:opacity .15s ease
+}
+.btn.dimmed::after{ opacity:0 }
+@keyframes pulse{
+0%,100% { box-shadow: 0 0 0 0 rgba(180,30,60,.55), 0 0 18px 6px rgba(180,30,60,.3); }
+50% { box-shadow: 0 0 0 5px rgba(180,30,60,0), 0 0 26px 10px rgba(180,30,60,.4); }
+}
+.btn.primary.ready:not(.dimmed){ animation:pulse 1.6s ease-in-out infinite }
+
+/* ===================== VECTOR CHIPS (CONTROL BAR) ===================== */
+#chipsArea .chip-img{
+  width: clamp(56px, 7vw, 72px);
+  height: clamp(56px, 7vw, 72px);
+  border-radius:50%; border:none; background-color:transparent;
+  background-repeat:no-repeat; background-position:center; background-size:contain;
+  position:relative; cursor:pointer;
+}
+#chipsArea .chip-img span{ position:absolute; inset:0; color:transparent; font-size:0; line-height:0 }
+#chipsArea .chip-img[data-value="5"]   { background-image:url('assets/chip-5.svg') }
+#chipsArea .chip-img[data-value="20"]  { background-image:url('assets/chip-20.svg') }
+#chipsArea .chip-img[data-value="50"]  { background-image:url('assets/chip-50.svg') }
+#chipsArea .chip-img[data-value="100"] { background-image:url('assets/chip-100.svg') }
+
+/* ===================== REALISTIC BET STACKS (INSIDE SEAT) ===================== */
 .bet-stack .coin{
-  position:absolute;
-  width:44px;
-  height:44px;
-  background-repeat:no-repeat;
-  background-position:center;
-  background-size:contain;
-  filter:drop-shadow(0 6px 6px rgba(0,0,0,.35));
-  transform:translate(0,0) scale(.9);
-  transition:transform .25s cubic-bezier(.2,.8,.2,1),opacity .25s;
-  will-change:transform;
-  opacity:0;
+  position:absolute; width:44px; height:44px;
+  background-repeat:no-repeat; background-position:center; background-size:contain;
+  filter: drop-shadow(0 6px 6px rgba(0,0,0,.35));
+  transform: translate(0,0) scale(.9);
+  transition: transform .25s cubic-bezier(.2,.8,.2,1), opacity .25s;
+  will-change: transform; opacity:0;
 }
-.bet-stack .coin.in{opacity:1;transform:translate(0,0) scale(1)}
+.bet-stack .coin.in{ opacity:1; transform: translate(0,0) scale(1) }
+@media (max-width:520px){ .bet-stack .coin{ width:40px; height:40px } }
 
-#reshuffleToast {
-  position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
-  background: rgba(10,30,20,0.88); color: #7fffb0;
-  border: 1px solid #2dcc70; border-radius: 999px;
-  padding: 8px 20px; font-weight: 700; font-size: 14px;
-  opacity: 0; transition: opacity 0.3s ease; z-index: 2000;
-  pointer-events: none; white-space: nowrap;
-}
-#reshuffleToast.show{opacity:1}
+/* ===================== DESKTOP/TABLET: CHIPS LEFT, BUTTONS RIGHT ===================== */
+@media (min-width:900px){
+  #seatsArea{ position:relative; padding-bottom:56px; }
+  #controlBar{ position:static; display:contents; } /* children position inside seatsArea */
 
-#bankruptOverlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.82);
-  display: none; align-items: center; justify-content: center; z-index: 3000;
-}
-#bankruptOverlay.show{display:flex}
-#bankruptBox {
-  background: #0b1f2e; border: 1px solid #ff6b6b44;
-  border-radius: 20px; padding: 40px 48px;
-  text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-}
-#bankruptMsg { font-size: clamp(28px,5vw,42px); font-weight: 900; color: #ff8a8a; margin-bottom: 24px; }
+  #chipsArea, #actionButtons{
+    position:absolute; top:50%; transform:translateY(-50%);
+    display:flex; gap:12px; z-index:30;
+  }
+  #chipsArea{ left:-96px;  flex-direction:column; }
+  #actionButtons{ right:-96px; flex-direction:column; }
 
-#chipsArea.shake{animation:trayShake .25s linear}
-@keyframes trayShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
-
-@media (max-width:900px){
-  #controlBar{grid-template-columns:1fr;row-gap:10px}
-  #actionButtons{justify-content:center}
-  #seatToggle{justify-content:center}
+  #chipsArea .chip-img{ width:64px; height:64px; }
+  #actionButtons .btn{ padding:9px 14px; }
 }
 
+/* ===================== MOBILE: SEAT CAROUSEL + STICKY FOOTER ===================== */
 @media (max-width:520px){
-  #topbar{flex-wrap:wrap;justify-content:center}
-  .player-badge .label{display:none}
-
-  #casinoTable{padding-top:50px}
-
-  #dealerZone{
-    width:100%;
-    flex-direction:column;
-    align-items:center;
-    gap:2px;
-  }
-  #dealerAvatar{height:90px}
-  #dealerCardsWrap{flex-direction:column;align-items:center;margin-bottom:0}
-
-  #feltSurface{
-    min-height:55svh;
-    padding:90px 8px 20px;
-    border-bottom-width:14px;
-  }
-
   #seatsArea{
-    margin-top:78px;
-    display:grid;
-    grid-auto-flow:column;
-    grid-auto-columns:88vw;
-    overflow-x:auto;
-    scroll-snap-type:x mandatory;
-    gap:10px;
-    justify-content:initial;
+    display:grid; grid-auto-flow:column; grid-auto-columns:88vw;
+    overflow-x:auto; scroll-snap-type:x mandatory; gap:12px;
+    padding:16px 6vw 120px;
   }
-  #seatsArea::-webkit-scrollbar{display:none}
-  .seat{scroll-snap-align:center;min-height:260px}
-  .seat .cards{inset:20px 20px 72px}
+  #seatsArea::-webkit-scrollbar{ display:none }
 
-  #chairsRow{margin-top:8px}
-  .chair{width:86px;height:36px}
+  .seat{ scroll-snap-align:center; min-height:62vh; position:relative }
+  .bet-box{ top:10px; left:10px; right:10px; bottom:10px }
+  .seat .cards{ top:24px; left:24px; right:24px; bottom:68px }
+  .seat .bet-stack{ left:14px; transform:none; width:auto; height:auto; bottom:14px }
 
-  #actionButtons{display:grid;grid-template-columns:repeat(3,1fr)}
-  #actionButtons .btn{width:100%;padding:10px 0}
+  .card{ width:clamp(54px,16vw,66px); height:clamp(78px,23vw,96px) }
+  .flying-card{ width:clamp(54px,16vw,66px); height:clamp(78px,23vw,96px) }
 
-  .card,.flying-card{width:58px;height:84px}
-  .bet-stack .coin{width:40px;height:40px}
+  #controlBar{
+    position:sticky; bottom:0; z-index:1000;
+    padding:10px max(8px, env(safe-area-inset-left))
+             calc(10px + env(safe-area-inset-bottom))
+             max(8px, env(safe-area-inset-right));
+    backdrop-filter: blur(8px);
+    background: linear-gradient(to top, rgba(45,10,24,.92), rgba(45,10,24,.55));
+    display:grid; grid-template-columns:1fr; row-gap:10px;
+  }
+  #chipsArea{ display:flex; gap:12px; overflow-x:auto; padding:0 4px 2px }
+  #chipsArea::-webkit-scrollbar{ display:none }
+  #chipsArea .chip-img{ width:56px; height:56px; flex:0 0 auto }
+
+  #actionButtons{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px }
+  #actionButtons .btn{ width:100%; padding:11px 0 }
+
+  #seatToggle{ order:-1; justify-content:center; gap:10px }
+  #seatToggle button{ padding:8px 12px }
+}
+/* ---------------- iPhone-friendly layout fixes ---------------- */
+@media (max-width: 520px){
+
+  /* Use safe-area and small viewport height for iOS toolbars */
+  :root{
+    --bar-gap: max(12px, env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Dealer area: compact */
+  #dealerArea{
+    margin: 8px auto 10px;
+    padding: 14px 10px 18px;
+    min-height: 18svh;
+  }
+  #dealerTray{ margin-top: 22px; }
+  #dealerTotal{ transform: translateY(-2px); }
+
+  /* Seats become a 1‑seat carousel with generous space */
+  #seatsArea{
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 90vw;
+    gap: 12px;
+
+    min-height: 60svh;
+    padding: 14px 5vw calc(110px + var(--bar-gap));
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+  }
+  #seatsArea::-webkit-scrollbar{ display:none; }
+
+  .seat{
+    scroll-snap-align: center;
+    min-height: 56svh;
+    position: relative;
+  }
+
+  /* Big dotted bet box */
+  .bet-box{
+    top: 10px; left: 10px; right: 10px; bottom: 74px;
+    background: url('assets/bet-box.svg') center/contain no-repeat;
+  }
+
+  /* Cards inside the box */
+  .seat .cards{
+    top: 22px; left: 22px; right: 22px; bottom: 104px;
+    display: flex; flex-wrap: wrap; gap: 8px;
+    justify-content: center; align-items: center;
+  }
+
+  /* Seat total badge */
+  .total{
+    top: 2px; font-size: 14px; padding: 2px 8px;
+  }
+
+  /* Bet stack host */
+  .seat .bet-stack{
+    left: 22px; right: 22px; transform: none;
+    width: auto; height: 64px; bottom: 16px;
+  }
+
+  /* Card sizes scale to screen */
+  .card       { width: clamp(56px, 17vw, 68px); height: clamp(78px, 22vw, 96px); }
+  .flying-card{ width: clamp(56px, 17vw, 68px); height: clamp(78px, 22vw, 96px); }
+
+  /* Sticky control bar at bottom */
+  #controlsArea{
+    position: fixed;
+    left: 0; right: 0; bottom: 0; z-index: 50;
+    padding: 10px max(8px, env(safe-area-inset-left))
+             calc(10px + var(--bar-gap))
+             max(8px, env(safe-area-inset-right));
+    background: linear-gradient(to top, rgba(26,5,16,.62), rgba(26,5,16,.34));
+    backdrop-filter: blur(8px);
+    display: grid; grid-template-columns: 1fr; row-gap: 10px;
+    pointer-events: none;   /* bar ignores taps */
+  }
+
+  /* groups are tappable */
+  #chipsArea, #seatToggle, #actionButtons{
+    pointer-events: auto;
+  }
+
+  /* Chips row */
+  #chipsArea{
+    display: flex; gap: 14px;
+    overflow-x: auto; padding: 0 6px 2px;
+  }
+  #chipsArea::-webkit-scrollbar{ display:none; }
+  #chipsArea .chip-img{
+    width: 64px; height: 64px; flex: 0 0 auto;
+  }
+
+  /* Seat toggles above buttons */
+  #seatToggle{
+    order: -1;
+    display: flex; justify-content: center; gap: 10px;
+  }
+
+  /* Action buttons in a grid */
+  #actionButtons{
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  }
+  #actionButtons .btn{
+    width: 100%; height: 48px; padding: 0;
+    font-size: 16px; border-radius: 12px;
+  }
+}
+
+/* Extra nudge for iOS */
+@supports (-webkit-touch-callout: none){
+  #seatsArea{ min-height: 62svh; }
 }
