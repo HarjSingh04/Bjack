@@ -3,13 +3,14 @@
    Offline caching + versioning
    ============================== */
 
-const VERSION = 'all-2025-08-10';
+const VERSION = 'all-2025-refine-1';
 const CACHE = 'bjack-'+VERSION;
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './script.js',
+  './sw.js',
   './sw.js?v='+VERSION
 ];
 

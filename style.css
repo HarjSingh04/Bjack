@@ -69,12 +69,32 @@ body{
   background:var(--ink); border:1px solid #ffffff1f;
   box-shadow:inset 0 0 0 1px #1bd2c955; white-space:nowrap;
 }
+.stats-badge{
+  display:inline-flex; align-items:center; gap:10px;
+  padding:8px 12px; border-radius:999px;
+  background:
+    radial-gradient(120% 160% at 15% 30%, #ffffff1a, transparent 50%),
+    linear-gradient(180deg, #174b5f, #0f2f41);
+  border:1px solid #ffffff26;
+  box-shadow:0 6px 18px rgba(0,0,0,.35), inset 0 0 0 1px #4fdad833;
+  color:#eaffff;
+  font-weight:700;
+  white-space:nowrap;
+}
+.stats-badge b{
+  display:inline-grid; place-items:center; min-width:22px;
+  margin-left:4px; padding:1px 6px; border-radius:8px;
+  background:var(--ink); border:1px solid #ffffff1f;
+  box-shadow:inset 0 0 0 1px #1bd2c955;
+}
 @media (max-width:420px){
   .player-badge{ gap:8px; padding:6px 10px;
     max-width:calc(100vw - (env(safe-area-inset-left,0px)+env(safe-area-inset-right,0px)+24px));
   }
   .player-badge .label{ display:none; }
   .player-badge .money{ padding:2px 6px; }
+  .stats-badge{ gap:8px; padding:6px 10px; font-size:13px; }
+  .stats-badge b{ min-width:18px; padding:1px 5px; }
 }
 
 /* ===================== DEALER AREA ===================== */
@@ -204,6 +224,50 @@ body{
 }
 .payout.show{ opacity:1; transform:translate(-50%,-50%) scale(1) }
 .payout.win{ color:#67f6d1 } .payout.push{ color:#9fc0ff } .payout.lose{ color:#ff8a8a }
+
+#reshuffleToast{
+  position:fixed;
+  top:16px;
+  left:50%;
+  transform:translateX(-50%) translateY(-8px);
+  padding:8px 14px;
+  border-radius:999px;
+  background:rgba(0,0,0,.6);
+  color:#fff;
+  font-weight:700;
+  opacity:0;
+  pointer-events:none;
+  z-index:2000;
+  transition:opacity .2s ease, transform .2s ease;
+}
+#reshuffleToast.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
+
+#bankruptOverlay{
+  position:fixed;
+  inset:0;
+  display:none;
+  place-items:center;
+  background:rgba(2,14,22,.78);
+  z-index:2500;
+}
+#bankruptOverlay.show{ display:grid; }
+#bankruptOverlay .panel{
+  width:min(92vw,420px);
+  border-radius:16px;
+  border:1px solid #ffffff2a;
+  background:linear-gradient(180deg,#15344a,#0d2535);
+  box-shadow:0 18px 36px rgba(0,0,0,.45), inset 0 0 0 1px #5dd8cf2e;
+  padding:20px;
+  text-align:center;
+}
+#bankruptOverlay .title{
+  font-size:clamp(24px,4vw,34px);
+  font-weight:900;
+  margin-bottom:14px;
+}
 
 /* ===================== CONTROL BAR ===================== */
 #controlBar{
