@@ -3,7 +3,7 @@
    Offline caching + versioning
    ============================== */
 
-const VERSION = 'all-2025-refine-1';
+const VERSION = 'all-2025-maroon-1';
 const CACHE = 'bjack-'+VERSION;
 const ASSETS = [
   './',
