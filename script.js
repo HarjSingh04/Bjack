@@ -506,6 +506,8 @@ function applySeatLayout(){
   seatsArea.classList.remove('solo','duo','trio','arc');
   seatsArea.classList.add('arc', activeSeatsCount===1?'solo':activeSeatsCount===2?'duo':'trio');
   for (let i=0;i<3;i++) seatRoots[i].style.display = (i<activeSeatsCount)?'':'none';
+  const casinoTable = document.getElementById('casinoTable');
+  if (casinoTable) casinoTable.dataset.seats = activeSeatsCount;
 }
 function nextUnfinishedSeat(fromIdx){ for (let i=fromIdx+1;i<activeSeatsCount;i++){ if(!finished[i]) return i; } return -1; }
 function allPlayersBustedOnly(){ for (let i=0;i<activeSeatsCount;i++){ if (total(hands[i])<=21) return false; } return true; }

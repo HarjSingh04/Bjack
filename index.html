@@ -11,101 +11,116 @@
   <link rel="stylesheet" href="style.css?v=iphone-1" />
 </head>
 <body data-theme="felt">
+
   <!-- ======= Top bar ======= -->
   <header id="topbar" aria-label="Header">
     <div id="brand">HS Blackjack</div>
-
-    <!-- Player badge (name + bank) -->
+    <div class="stats-badge" id="statsBadge">W:<span id="statsW"><b id="statWins">0</b></span> L:<span id="statsL"><b id="statLosses">0</b></span> P:<span id="statsP"><b id="statPushes">0</b></span></div>
     <div class="player-badge" aria-live="polite">
       <span class="tag">HS</span>
       <span class="label">Player</span>
       <span class="money" id="playerBank">$1000</span>
     </div>
-    <div class="stats-badge" aria-live="polite">
-      <span>W <b id="statWins">0</b></span>
-      <span>L <b id="statLosses">0</b></span>
-      <span>P <b id="statPushes">0</b></span>
-    </div>
   </header>
 
-  <!-- ======= Dealer felt ======= -->
-  <section id="dealerArea" aria-label="Dealer area">
-    <div id="dealShoe" class="deal-shoe" aria-hidden="true"></div>
+  <!-- ======= Casino Table ======= -->
+  <div id="casinoTable" data-seats="1">
 
-    <!-- Dealer tray = cards + total side by side -->
-    <div id="dealerTray">
-      <div id="dealerCards" aria-live="polite"></div>
-      <div id="dealerTotal" aria-label="Dealer total"></div>
-    </div>
-  </section>
-
-  <!-- ======= Seats / table ======= -->
-  <section id="seatsArea" class="arc solo" aria-label="Player seats">
-    <!-- Seat 1 -->
-    <div class="seat" data-seat="1">
-      <div class="total" id="total1"></div>
-      <div class="bet-box" aria-label="Bet area"></div>
-      <div class="cards" id="hand1" aria-live="polite"></div>
-      <div class="bet-stack"></div>
-      <div class="bet-pill" id="bet1">$0</div>
-    </div>
-
-    <!-- Seat 2 -->
-    <div class="seat" data-seat="2" style="display:none">
-      <div class="total" id="total2"></div>
-      <div class="bet-box" aria-label="Bet area"></div>
-      <div class="cards" id="hand2" aria-live="polite"></div>
-      <div class="bet-stack"></div>
-      <div class="bet-pill" id="bet2">$0</div>
-    </div>
-
-    <!-- Seat 3 -->
-    <div class="seat" data-seat="3" style="display:none">
-      <div class="total" id="total3"></div>
-      <div class="bet-box" aria-label="Bet area"></div>
-      <div class="cards" id="hand3" aria-live="polite"></div>
-      <div class="bet-stack"></div>
-      <div class="bet-pill" id="bet3">$0</div>
-    </div>
-
-    <!-- ======= Controls (desktop: chips left / actions right) ======= -->
-    <div id="controlBar">
-      <!-- Chip tray -->
-      <div id="chipsArea" aria-label="Chips">
-        <button class="chip-img" data-value="5"   aria-label="$5"><span>$5</span></button>
-        <button class="chip-img" data-value="20"  aria-label="$20"><span>$20</span></button>
-        <button class="chip-img" data-value="50"  aria-label="$50"><span>$50</span></button>
-        <button class="chip-img" data-value="100" aria-label="$100"><span>$100</span></button>
-      </div>
-
-      <!-- Seat toggle -->
-      <div id="seatToggle" role="group" aria-label="Seat count">
-        <button type="button" class="btn accent active" data-seats="1">1 Seat</button>
-        <button type="button" class="btn accent" data-seats="2">2 Seats</button>
-        <button type="button" class="btn accent" data-seats="3">3 Seats</button>
-      </div>
-
-      <!-- Actions -->
-      <div id="actionButtons" role="group" aria-label="Actions">
-        <button id="dealBtn"   class="btn primary" disabled>Deal</button>
-        <button id="rebetBtn"  class="btn accent"  disabled>Rebet</button>
-        <button id="clearBtn"  class="btn accent dimmed">Clear</button>
-        <button id="hitBtn"    class="btn safe dimmed"    disabled>Hit</button>
-        <button id="standBtn"  class="btn safe dimmed"    disabled>Stand</button>
-        <button id="doubleBtn" class="btn gold dimmed"    disabled>Double</button>
-        <button id="splitBtn"  class="btn violet dimmed"  disabled>Split</button>
+    <!-- Dealer zone (top-center of table, above the arc) -->
+    <div id="dealerZone">
+      <img id="dealerAvatar" src="assets/female-dealer.svg" alt="Dealer" />
+      <div id="dealerCardsWrap">
+        <div id="dealerCards" aria-live="polite"></div>
+        <div id="dealerTotal" aria-label="Dealer total"></div>
       </div>
     </div>
-  </section>
-  <div id="reshuffleToast" aria-live="polite">🔀 Shoe reshuffled</div>
-  <div id="bankruptOverlay" aria-hidden="true">
-    <div class="panel">
-      <div class="title">💸 You're Broke!</div>
+
+    <!-- Felt surface (the table top) -->
+    <div id="feltSurface">
+
+      <!-- Dealing shoe -->
+      <div id="dealShoe" class="deal-shoe" aria-hidden="true"></div>
+
+      <!-- Player seats arc across the felt -->
+      <div id="seatsArea" class="arc solo" aria-label="Player seats">
+
+        <!-- Seat 1 -->
+        <div class="seat" data-seat="1">
+          <div class="total" id="total1"></div>
+          <div class="bet-box" aria-label="Bet area"></div>
+          <div class="cards" id="hand1" aria-live="polite"></div>
+          <div class="bet-stack"></div>
+          <div class="bet-pill" id="bet1">$0</div>
+        </div>
+
+        <!-- Seat 2 -->
+        <div class="seat" data-seat="2" style="display:none">
+          <div class="total" id="total2"></div>
+          <div class="bet-box" aria-label="Bet area"></div>
+          <div class="cards" id="hand2" aria-live="polite"></div>
+          <div class="bet-stack"></div>
+          <div class="bet-pill" id="bet2">$0</div>
+        </div>
+
+        <!-- Seat 3 -->
+        <div class="seat" data-seat="3" style="display:none">
+          <div class="total" id="total3"></div>
+          <div class="bet-box" aria-label="Bet area"></div>
+          <div class="cards" id="hand3" aria-live="polite"></div>
+          <div class="bet-stack"></div>
+          <div class="bet-pill" id="bet3">$0</div>
+        </div>
+
+      </div><!-- /seatsArea -->
+
+    </div><!-- /feltSurface -->
+
+    <!-- Chairs row below the table edge -->
+    <div id="chairsRow">
+      <div class="chair chair-1"></div>
+      <div class="chair chair-2"></div>
+      <div class="chair chair-3"></div>
+    </div>
+
+  </div><!-- /casinoTable -->
+
+  <!-- ======= Sticky Control Bar ======= -->
+  <div id="controlBar">
+    <div id="chipsArea" aria-label="Chips">
+      <button class="chip-img" data-value="5"   aria-label="$5"><span>$5</span></button>
+      <button class="chip-img" data-value="20"  aria-label="$20"><span>$20</span></button>
+      <button class="chip-img" data-value="50"  aria-label="$50"><span>$50</span></button>
+      <button class="chip-img" data-value="100" aria-label="$100"><span>$100</span></button>
+    </div>
+
+    <div id="seatToggle" role="group" aria-label="Seat count">
+      <button type="button" class="btn accent active" data-seats="1">1 Seat</button>
+      <button type="button" class="btn accent" data-seats="2">2 Seats</button>
+      <button type="button" class="btn accent" data-seats="3">3 Seats</button>
+    </div>
+
+    <div id="actionButtons" role="group" aria-label="Actions">
+      <button id="dealBtn"   class="btn primary" disabled>Deal</button>
+      <button id="rebetBtn"  class="btn accent"  disabled>Rebet</button>
+      <button id="clearBtn"  class="btn accent dimmed" disabled>Clear</button>
+      <button id="hitBtn"    class="btn safe dimmed"    disabled>Hit</button>
+      <button id="standBtn"  class="btn safe dimmed"    disabled>Stand</button>
+      <button id="doubleBtn" class="btn gold dimmed"    disabled>Double</button>
+      <button id="splitBtn"  class="btn violet dimmed"  disabled>Split</button>
+    </div>
+  </div>
+
+  <!-- Reshuffle toast -->
+  <div id="reshuffleToast">🔀 Shoe reshuffled</div>
+
+  <!-- Bankrupt overlay -->
+  <div id="bankruptOverlay" aria-hidden="true" style="display:none">
+    <div id="bankruptBox" class="panel">
+      <div id="bankruptMsg" class="title">💸 You're Broke!</div>
       <button id="restartBankBtn" class="btn primary">Restart ($1000)</button>
     </div>
   </div>
 
-  <!-- JS (bump the version when you change JS) -->
   <script src="script.js?v=iphone-1" defer></script>
 </body>
 </html>
