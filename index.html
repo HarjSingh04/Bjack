@@ -21,12 +21,16 @@
       <span class="label">Player</span>
       <span class="money" id="playerBank">$1000</span>
     </div>
+    <div class="stats-badge" aria-live="polite">
+      <span>W <b id="statWins">0</b></span>
+      <span>L <b id="statLosses">0</b></span>
+      <span>P <b id="statPushes">0</b></span>
+    </div>
   </header>
 
   <!-- ======= Dealer felt ======= -->
   <section id="dealerArea" aria-label="Dealer area">
-    <!-- Dealing shoe (image file: assets/shoe.png) -->
-    <img id="dealShoe" class="deal-shoe" src="assets/shoe.png" alt="Shoe" />
+    <div id="dealShoe" class="deal-shoe" aria-hidden="true"></div>
 
     <!-- Dealer tray = cards + total side by side -->
     <div id="dealerTray">
@@ -85,6 +89,7 @@
       <div id="actionButtons" role="group" aria-label="Actions">
         <button id="dealBtn"   class="btn primary" disabled>Deal</button>
         <button id="rebetBtn"  class="btn accent"  disabled>Rebet</button>
+        <button id="clearBtn"  class="btn accent dimmed">Clear</button>
         <button id="hitBtn"    class="btn safe dimmed"    disabled>Hit</button>
         <button id="standBtn"  class="btn safe dimmed"    disabled>Stand</button>
         <button id="doubleBtn" class="btn gold dimmed"    disabled>Double</button>
@@ -92,6 +97,13 @@
       </div>
     </div>
   </section>
+  <div id="reshuffleToast" aria-live="polite">🔀 Shoe reshuffled</div>
+  <div id="bankruptOverlay" aria-hidden="true">
+    <div class="panel">
+      <div class="title">💸 You're Broke!</div>
+      <button id="restartBankBtn" class="btn primary">Restart ($1000)</button>
+    </div>
+  </div>
 
   <!-- JS (bump the version when you change JS) -->
   <script src="script.js?v=iphone-1" defer></script>
